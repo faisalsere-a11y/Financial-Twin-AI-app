@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 
+const isGitHubPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "true";
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6)
@@ -41,6 +43,12 @@ export function AuthCard({ mode }: { mode: Mode }) {
     if (mode === "forgot") {
       toast.success("Password reset link prepared for demo inbox.");
       router.push("/login");
+      return;
+    }
+
+    if (isGitHubPages) {
+      toast.success("Welcome to the GitHub Pages demo.");
+      router.push("/dashboard");
       return;
     }
 

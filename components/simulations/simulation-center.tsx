@@ -15,9 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { sampleScenario } from "@/lib/financial/sample-data";
+import { compareScenario } from "@/lib/financial/engine";
+import { sampleProfile, sampleScenario } from "@/lib/financial/sample-data";
 import type { ScenarioComparison } from "@/lib/financial/types";
 import { formatCurrency, formatPercent } from "@/lib/utils";
+
+const isGitHubPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "true";
 
 const formSchema = z.object({
   price: z.coerce.number().min(0),
@@ -68,23 +71,40 @@ export function SimulationCenter() {
 
   const mutation = useMutation({
     mutationFn: async (payload: SimulationForm) => {
+      const scenario = {
+        id: "custom-buy-car",
+        name: "Buy a Car",
+        type: "car" as const,
+        upfrontCost: payload.downPayment,
+        assetDelta: payload.price,
+        liabilityDelta: Math.max(0, payload.price - payload.downPayment),
+        monthlyIncomeDelta: payload.incomeChange,
+        monthlyExpenseDelta: payload.insurance + payload.fuel + payload.maintenance,
+        monthlyDebtPaymentDelta: Math.round(monthlyPayment),
+        annualReturnDelta: 0,
+        durationMonths: payload.loanYears * 12,
+        tags: ["Custom", "Car", "Decision"]
+      };
+
+      if (isGitHubPages) {
+        const comparison = compareScenario(sampleProfile, scenario);
+        return {
+          comparison,
+          advice: [
+            `${scenario.name} changes your monthly surplus by ${formatCurrency(comparison.delta.monthlySurplus)}.`,
+            `Debt ratio moves to ${formatPercent(comparison.after.debtRatio, 1)} after this decision.`,
+            comparison.after.emergencyFundMonths < 4
+              ? "Emergency fund is tight after this move. Rebuild liquidity before adding obligations."
+              : "Emergency fund remains resilient in this demo scenario.",
+            "Try changing the down payment or loan years to compare risk against liquidity."
+          ]
+        } satisfies SimulationResponse;
+      }
+
       const response = await fetch("/api/simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: "custom-buy-car",
-          name: "Buy a Car",
-          type: "car",
-          upfrontCost: payload.downPayment,
-          assetDelta: payload.price,
-          liabilityDelta: Math.max(0, payload.price - payload.downPayment),
-          monthlyIncomeDelta: payload.incomeChange,
-          monthlyExpenseDelta: payload.insurance + payload.fuel + payload.maintenance,
-          monthlyDebtPaymentDelta: Math.round(monthlyPayment),
-          annualReturnDelta: 0,
-          durationMonths: payload.loanYears * 12,
-          tags: ["Custom", "Car", "Decision"]
-        })
+        body: JSON.stringify(scenario)
       });
       if (!response.ok) throw new Error("Simulation failed");
       return (await response.json()) as SimulationResponse;

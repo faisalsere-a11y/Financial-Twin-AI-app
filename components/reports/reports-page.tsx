@@ -7,9 +7,12 @@ import { AppPageHeader } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { calculateFinancialTwin } from "@/lib/financial/engine";
-import { sampleProfile } from "@/lib/financial/sample-data";
+import { calculateFinancialTwin, compareScenario } from "@/lib/financial/engine";
+import { sampleProfile, sampleScenario } from "@/lib/financial/sample-data";
+import { twinToCsv } from "@/lib/reports/export";
 import { formatCurrency } from "@/lib/utils";
+
+const isGitHubPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "true";
 
 export function ReportsPage() {
   const twin = calculateFinancialTwin(sampleProfile);
@@ -20,6 +23,18 @@ export function ReportsPage() {
   }));
 
   const exportCsv = () => {
+    if (isGitHubPages) {
+      const csv = twinToCsv(twin, compareScenario(sampleProfile, sampleScenario));
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "financial-twin-report.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("CSV export downloaded.");
+      return;
+    }
+
     window.location.href = "/api/reports/export";
     toast.success("CSV export started.");
   };
