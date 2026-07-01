@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+coverage
+*.tsbuildinfo
+.env
+.env*.local
+.lazyweb
+prisma/dev.db
+prisma/dev.db-journal
+*.log
+dev-server.*
