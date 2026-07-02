@@ -53,13 +53,13 @@ const config: Config = {
         },
         twin: {
           cyan: "#00d6ff",
-          blue: "#2f7cff",
-          green: "#16d69a",
+          blue: "#3b82f6",
+          green: "#10b981",
           amber: "#f6b50e",
           red: "#ff5b6b",
-          violet: "#a578ff",
-          ink: "#080d19",
-          panel: "#101827"
+          violet: "#8b5cf6",
+          ink: "#05080f",
+          panel: "#0d1117"
         }
       },
       borderRadius: {
@@ -68,8 +68,11 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)"
       },
       boxShadow: {
-        glass: "0 18px 70px rgba(0, 0, 0, 0.35)",
-        glow: "0 0 38px rgba(22, 214, 154, 0.28)"
+        glass: "0 18px 70px rgba(0, 0, 0, 0.38)",
+        "glass-strong": "0 32px 92px rgba(0, 0, 0, 0.55)",
+        glow: "0 0 38px rgba(59, 130, 246, 0.28)",
+        "glow-green": "0 0 40px rgba(16, 185, 129, 0.3)",
+        "glow-purple": "0 0 42px rgba(139, 92, 246, 0.28)"
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", "Inter", "system-ui", "sans-serif"]

@@ -23,9 +23,9 @@ function SettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-border bg-background/35 p-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 md:flex-row md:items-center md:justify-between">
       <div className="flex gap-3">
-        <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex size-10 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-400/10 text-blue-200">
           <Icon />
         </span>
         <div>
@@ -81,7 +81,7 @@ export function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Lock className="text-primary" />
+              <Lock className="text-blue-300" />
               Demo Security Notes
             </CardTitle>
           </CardHeader>

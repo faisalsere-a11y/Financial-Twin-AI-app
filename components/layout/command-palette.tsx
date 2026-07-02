@@ -58,7 +58,7 @@ export function CommandPalette() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-background/70 px-4 pt-20 backdrop-blur-xl">
-      <div className="glass-panel w-full max-w-2xl overflow-hidden rounded-xl">
+      <div className="glass-panel-strong w-full max-w-2xl overflow-hidden rounded-2xl">
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
           <Search className="text-muted-foreground" />
           <Input
@@ -79,11 +79,11 @@ export function CommandPalette() {
                 href={command.href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-colors hover:bg-muted/70",
+                  "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-colors hover:bg-white/[0.06]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 )}
               >
-                <span className="flex size-9 items-center justify-center rounded-lg border border-border bg-background/60 text-primary">
+                <span className="flex size-9 items-center justify-center rounded-xl border border-blue-400/20 bg-blue-400/10 text-blue-200">
                   <Icon />
                 </span>
                 <span className="flex flex-1 flex-col">

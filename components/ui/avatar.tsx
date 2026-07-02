@@ -8,7 +8,7 @@ function Avatar({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
 function AvatarFallback({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex size-full items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary", className)}
+      className={cn("flex size-full items-center justify-center rounded-full bg-primary/[0.15] text-sm font-bold text-primary", className)}
       {...props}
     />
   );

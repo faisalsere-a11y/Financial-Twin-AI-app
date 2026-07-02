@@ -69,8 +69,8 @@ export function ReportsPage() {
                 <XAxis dataKey="month" stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
                 <YAxis stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ background: "#0d1423", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10 }} />
-                <Area dataKey="netWorth" stroke="#16d69a" fill="#16d69a22" />
-                <Area dataKey="savings" stroke="#2f7cff" fill="#2f7cff20" />
+                <Area dataKey="netWorth" stroke="#10b981" fill="#10b98122" />
+                <Area dataKey="savings" stroke="#3b82f6" fill="#3b82f620" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -81,8 +81,8 @@ export function ReportsPage() {
           </CardHeader>
           <CardContent className="grid gap-3">
             {["Monthly - June 2026", "Quarterly - Q2 2026", "Annual - 2026 Forecast"].map((item) => (
-              <button key={item} className="flex items-center gap-3 rounded-lg border border-border bg-background/35 p-4 text-left hover:bg-muted/50">
-                <Printer className="text-primary" />
+              <button key={item} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-left hover:bg-white/[0.07]">
+                <Printer className="text-blue-300" />
                 <span className="font-semibold">{item}</span>
               </button>
             ))}

@@ -4,16 +4,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-glow hover:brightness-110",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        outline: "border border-border bg-background/40 hover:bg-muted",
-        ghost: "hover:bg-muted/70 hover:text-foreground",
+        default:
+          "border border-blue-400/30 bg-gradient-to-br from-blue-500 to-violet-600 text-white shadow-glow hover:brightness-110",
+        secondary: "border border-emerald-400/25 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/[0.15]",
+        outline: "border border-white/10 bg-white/[0.03] hover:bg-white/[0.07]",
+        ghost: "hover:bg-white/[0.07] hover:text-foreground",
         destructive: "bg-destructive text-destructive-foreground hover:brightness-110",
-        glass: "border border-white/10 bg-white/8 text-foreground backdrop-blur hover:bg-white/12"
+        glass: "border border-white/10 bg-white/[0.06] text-foreground backdrop-blur hover:bg-white/[0.1]"
       },
       size: {
         default: "h-10 px-4 py-2",

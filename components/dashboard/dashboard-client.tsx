@@ -25,7 +25,6 @@ import {
   Lightbulb,
   PiggyBank,
   ShieldAlert,
-  Sparkles,
   TrendingUp,
   Undo2,
   Wallet
@@ -35,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { AppPageHeader, MiniMetric } from "@/components/layout/app-shell";
+import { AppPageHeader, MiniMetric, NovaOrb } from "@/components/layout/app-shell";
 import { calculateFinancialTwin, compareScenario, forecastGoalCompletion } from "@/lib/financial/engine";
 import { activityFeed, sampleProfile, scenarioLibrary } from "@/lib/financial/sample-data";
 import type { ScenarioInput } from "@/lib/financial/types";
@@ -64,7 +63,7 @@ function HealthRing({ score }: { score: number }) {
           cx="32"
           cy="32"
           r="25"
-          stroke="#16d69a"
+          stroke="#3b82f6"
           strokeWidth="5"
           strokeLinecap="round"
           fill="none"
@@ -93,15 +92,15 @@ function MetricCard({
   children?: React.ReactNode;
 }) {
   const accentClass = {
-    green: "from-emerald-400/55 to-emerald-400/0",
-    blue: "from-blue-400/55 to-blue-400/0",
-    amber: "from-amber-400/55 to-amber-400/0",
-    rose: "from-rose-400/55 to-rose-400/0"
+    green: "from-emerald-400/[0.55] to-emerald-400/0",
+    blue: "from-blue-400/[0.55] to-blue-400/0",
+    amber: "from-amber-400/[0.55] to-amber-400/0",
+    rose: "from-rose-400/[0.55] to-rose-400/0"
   }[accent];
 
   return (
     <Card className="relative min-h-32 overflow-hidden">
-      <div className={cn("absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t opacity-40", accentClass)} />
+      <div className={cn("absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t opacity-35", accentClass)} />
       <CardHeader className="pb-3">
         <CardTitle className="text-muted-foreground">{title}</CardTitle>
       </CardHeader>
@@ -119,26 +118,31 @@ function IdentityHeader({ selected }: { selected: ScenarioInput }) {
   const comparison = compareScenario(sampleProfile, selected);
 
   return (
-    <Card id="twin" className="border-primary/25">
-      <CardContent className="grid gap-5 p-5 lg:grid-cols-[1fr_auto_1.7fr] lg:items-center">
+    <Card id="twin" className="glass-panel-strong border-blue-400/25 bg-gradient-to-br from-blue-500/10 via-white/[0.035] to-violet-500/10">
+      <div className="scanline pointer-events-none absolute inset-0 opacity-15" />
+      <CardContent className="relative grid gap-5 p-5 xl:grid-cols-[1.1fr_auto_1.7fr] xl:items-center">
         <div className="flex items-center gap-5">
-          <div className="relative flex size-16 items-center justify-center rounded-full bg-primary/10 text-xl font-black text-primary shadow-glow">
-            AH
-            <span className="absolute bottom-1 right-1 size-4 rounded-full border-2 border-background bg-primary" />
+          <div className="relative flex size-20 items-center justify-center rounded-3xl border border-blue-400/20 bg-white/[0.04] shadow-glow">
+            <NovaOrb className="size-12" />
+            <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-[#05080f] bg-emerald-400 text-[9px] font-black text-emerald-950">
+              AI
+            </span>
           </div>
           <div>
-            <h2 className="text-2xl font-black tracking-tight">Ahmed Al-Harbi</h2>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-300">Digital twin active</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight">Ahmed Al-Harbi</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Badge variant="success">Twin Active</Badge>
+              <Badge variant="blue">NOVA synced</Badge>
               <span className="text-xs text-muted-foreground">Last synced 2 min ago</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 border-border lg:border-l lg:border-r lg:px-6">
+        <div className="flex items-center gap-3 border-border xl:border-l xl:border-r xl:px-6">
           <HealthRing score={twin.financialHealth.score} />
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Health Score</p>
-            <p className="font-bold text-primary">{twin.financialHealth.band}</p>
+            <p className="font-bold text-emerald-300">{twin.financialHealth.band}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -179,12 +183,12 @@ function ScenarioTile({
       role="button"
       tabIndex={0}
       className={cn(
-        "glass-panel flex min-h-44 cursor-pointer flex-col items-start justify-between rounded-xl p-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        selected && "border-primary/45 bg-primary/10 shadow-glow"
+        "glass-panel flex min-h-44 cursor-pointer flex-col items-start justify-between rounded-2xl p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        selected && "border-blue-400/[0.45] bg-gradient-to-br from-blue-500/[0.16] to-violet-500/[0.12] shadow-glow"
       )}
     >
       <div className="flex w-full items-start justify-between">
-        <span className="flex size-11 items-center justify-center rounded-lg border border-border bg-muted/40 text-primary">
+        <span className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-blue-200">
           <Icon />
         </span>
         <Badge variant={tone}>{scenario.tags[0]}</Badge>
@@ -220,7 +224,7 @@ function CashFlowChart({ selected }: { selected: ScenarioInput }) {
         </div>
         <div className="flex gap-3 text-xs">
           <span className="flex items-center gap-2 text-blue-300"><span className="h-0.5 w-3 bg-blue-400" />Current</span>
-          <span className="flex items-center gap-2 text-primary"><span className="h-0.5 w-3 bg-primary" />After</span>
+          <span className="flex items-center gap-2 text-emerald-300"><span className="h-0.5 w-3 bg-emerald-400" />After</span>
         </div>
       </CardHeader>
       <CardContent>
@@ -229,20 +233,20 @@ function CashFlowChart({ selected }: { selected: ScenarioInput }) {
             <AreaChart data={data}>
               <defs>
                 <linearGradient id="after" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#16d69a" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#16d69a" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="current" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2f7cff" stopOpacity={0.26} />
-                  <stop offset="100%" stopColor="#2f7cff" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.26} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid stroke="rgba(255,255,255,.06)" vertical={false} />
               <XAxis dataKey="month" stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
               <YAxis stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
               <Tooltip contentStyle={{ background: "#0d1423", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10 }} />
-              <Area type="monotone" dataKey="current" stroke="#2f7cff" strokeWidth={2} fill="url(#current)" />
-              <Area type="monotone" dataKey="after" stroke="#16d69a" strokeWidth={2} strokeDasharray="6 5" fill="url(#after)" />
+              <Area type="monotone" dataKey="current" stroke="#3b82f6" strokeWidth={2} fill="url(#current)" />
+              <Area type="monotone" dataKey="after" stroke="#10b981" strokeWidth={2.5} strokeDasharray="6 5" fill="url(#after)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -255,12 +259,12 @@ function RecommendationPanel({ selected }: { selected: ScenarioInput }) {
   const comparison = useMemo(() => compareScenario(sampleProfile, selected), [selected]);
 
   return (
-    <Card id="insights" className="relative overflow-hidden border-primary/25">
-      <div className="absolute -right-10 -top-8 text-[11rem] font-black leading-none text-primary/5">AI</div>
+    <Card id="insights" className="relative overflow-hidden border-violet-400/25 bg-gradient-to-br from-violet-500/10 to-blue-500/[0.06]">
+      <div className="absolute -right-10 -top-8 text-[11rem] font-black leading-none text-blue-300/5">AI</div>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base normal-case tracking-normal">
-          <Sparkles className="text-primary" />
-          AI Recommendations
+          <NovaOrb className="size-7" />
+          NOVA Recommendations
         </CardTitle>
       </CardHeader>
       <CardContent className="relative grid gap-3">
@@ -270,10 +274,10 @@ function RecommendationPanel({ selected }: { selected: ScenarioInput }) {
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.07 }}
-            className="rounded-lg border border-white/10 bg-background/45 p-4"
+            className="rounded-xl border border-white/10 bg-white/[0.04] p-4"
           >
             <div className="flex gap-3">
-              <span className={cn("mt-1 size-2 rounded-full", index === 0 ? "bg-primary" : index === 1 ? "bg-amber-400" : "bg-blue-400")} />
+              <span className={cn("mt-1 size-2 rounded-full", index === 0 ? "bg-emerald-400" : index === 1 ? "bg-amber-400" : "bg-blue-400")} />
               <p className="text-sm leading-6 text-muted-foreground">{recommendation}</p>
             </div>
           </motion.div>
@@ -301,7 +305,7 @@ function ProjectionBars({ selected }: { selected: ScenarioInput }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {[{ title: "Current Path Projection (12mo)", rows: current }, { title: `After Decision: ${selected.name}`, rows: after }].map((group) => (
-        <Card key={group.title}>
+        <Card key={group.title} className={group.title.startsWith("After") ? "border-emerald-400/25 bg-emerald-400/10" : ""}>
           <CardHeader>
             <CardTitle>{group.title}</CardTitle>
           </CardHeader>
@@ -312,7 +316,7 @@ function ProjectionBars({ selected }: { selected: ScenarioInput }) {
                   <span>{item.label}</span>
                   <span className="text-foreground">{item.value}%</span>
                 </div>
-                <Progress value={item.value} indicatorClassName={item.label.includes("Debt") ? "bg-amber-400" : "bg-primary"} />
+                <Progress value={item.value} indicatorClassName={item.label.includes("Debt") ? "bg-amber-400" : "bg-emerald-400"} />
               </div>
             ))}
           </CardContent>
@@ -325,9 +329,9 @@ function ProjectionBars({ selected }: { selected: ScenarioInput }) {
 function TwinSummary({ selected }: { selected: ScenarioInput }) {
   const comparison = useMemo(() => compareScenario(sampleProfile, selected), [selected]);
   const data = [
-    { name: "Cash", value: comparison.after.profile.assets.cash, color: "#16d69a" },
-    { name: "Invested", value: comparison.after.profile.assets.investments + comparison.after.profile.assets.retirement, color: "#2f7cff" },
-    { name: "Real estate", value: comparison.after.profile.assets.realEstate, color: "#a578ff" },
+    { name: "Cash", value: comparison.after.profile.assets.cash, color: "#10b981" },
+    { name: "Invested", value: comparison.after.profile.assets.investments + comparison.after.profile.assets.retirement, color: "#3b82f6" },
+    { name: "Real estate", value: comparison.after.profile.assets.realEstate, color: "#8b5cf6" },
     { name: "Debt", value: comparison.after.monthlyDebtPayment * 24, color: "#f6b50e" }
   ];
 
@@ -335,7 +339,7 @@ function TwinSummary({ selected }: { selected: ScenarioInput }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <BrainCircuit className="text-primary" />
+          <BrainCircuit className="text-blue-300" />
           Financial Twin
         </CardTitle>
       </CardHeader>
@@ -393,8 +397,8 @@ function RecentSimulations() {
       </CardHeader>
       <CardContent className="grid gap-3">
         {activityFeed.map((item) => (
-          <div key={item} className="flex items-start gap-3 rounded-lg bg-muted/35 p-3">
-            <Lightbulb className="mt-0.5 text-primary" />
+          <div key={item} className="flex items-start gap-3 rounded-xl bg-white/[0.04] p-3">
+            <Lightbulb className="mt-0.5 text-blue-300" />
             <p className="text-sm text-muted-foreground">{item}</p>
           </div>
         ))}
@@ -417,8 +421,8 @@ export function DashboardClient() {
   return (
     <div className="mx-auto flex max-w-[1440px] flex-col gap-6">
       <AppPageHeader
-        title="Dashboard"
-        description="Your digital financial twin updates instantly as you compare decisions, risk, cash flow, savings, debt, and goals."
+        title="Twin Cockpit"
+        description="A live financial command center where NOVA compares decisions, risk, cash flow, savings, debt, and goals in real time."
         action={
           <Button
             variant="glass"
@@ -470,7 +474,7 @@ export function DashboardClient() {
         <GoalTracker />
         <RecentSimulations />
       </div>
-      <Card>
+      <Card className="border-blue-400/20">
         <CardHeader>
           <CardTitle>Monthly Flow Composition</CardTitle>
         </CardHeader>
@@ -481,7 +485,7 @@ export function DashboardClient() {
               <XAxis dataKey="label" stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
               <YAxis stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
               <Tooltip contentStyle={{ background: "#0d1423", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10 }} />
-              <Bar dataKey="value" fill="#16d69a" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

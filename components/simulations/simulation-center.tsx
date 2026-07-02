@@ -6,9 +6,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Heart, RotateCcw, Sparkles, Wand2 } from "lucide-react";
+import { Heart, RotateCcw, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { AppPageHeader } from "@/components/layout/app-shell";
+import { AppPageHeader, NovaOrb } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -137,7 +137,7 @@ export function SimulationCenter() {
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="normal-case tracking-normal">Buy a Car Scenario</CardTitle>
+            <CardTitle className="text-base normal-case tracking-tight">Buy a Car Lab</CardTitle>
             <p className="text-sm text-muted-foreground">Price, down payment, interest, loan years, insurance, fuel, maintenance, resale, and income change.</p>
           </CardHeader>
           <CardContent>
@@ -153,8 +153,8 @@ export function SimulationCenter() {
                 <Field label="Expected Resale"><Input type="number" {...form.register("expectedResale")} /></Field>
                 <Field label="Monthly Income Change"><Input type="number" {...form.register("incomeChange")} /></Field>
               </div>
-              <div className="rounded-xl border border-primary/20 bg-primary/10 p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Estimated monthly debt payment</p>
+              <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-300">Estimated monthly debt payment</p>
                 <p className="mt-1 text-2xl font-black">{formatCurrency(monthlyPayment)}</p>
               </div>
               <Button disabled={mutation.isPending}>
@@ -167,7 +167,7 @@ export function SimulationCenter() {
         <div className="grid gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Comparison Output</CardTitle>
+              <CardTitle>Current vs After Decision</CardTitle>
             </CardHeader>
             <CardContent>
               {result ? (
@@ -185,8 +185,8 @@ export function SimulationCenter() {
                         <XAxis dataKey="month" stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
                         <YAxis stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ background: "#0d1423", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10 }} />
-                        <Area dataKey="current" stroke="#2f7cff" fill="#2f7cff22" />
-                        <Area dataKey="after" stroke="#16d69a" fill="#16d69a22" />
+                        <Area dataKey="current" stroke="#3b82f6" fill="#3b82f622" />
+                        <Area dataKey="after" stroke="#10b981" fill="#10b98122" />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -215,7 +215,7 @@ export function SimulationCenter() {
                 </div>
               ) : (
                 <div className="flex min-h-72 flex-col items-center justify-center gap-3 text-center text-muted-foreground">
-                  <Sparkles className="text-primary" />
+                  <NovaOrb className="size-12" />
                   <p>Run a simulation to generate updated cash flow, savings, debt, risk, timeline, and charts.</p>
                 </div>
               )}
@@ -223,14 +223,17 @@ export function SimulationCenter() {
           </Card>
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>AI Explanation</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <NovaOrb className="size-7" />
+                NOVA Explanation
+              </CardTitle>
               <Button variant="ghost" size="icon" onClick={() => toast.success("Scenario added to favorites.")} aria-label="Favorite">
                 <Heart />
               </Button>
             </CardHeader>
             <CardContent className="grid gap-3">
               {(result?.advice ?? sampleScenario.tags.map((tag) => `Ready to analyze: ${tag}`)).map((item) => (
-                <div key={item} className="rounded-lg border border-white/10 bg-background/45 p-4 text-sm text-muted-foreground">
+                <div key={item} className="rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm text-muted-foreground">
                   {item}
                 </div>
               ))}

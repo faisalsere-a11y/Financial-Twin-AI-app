@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectItem } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { AppPageHeader } from "@/components/layout/app-shell";
+import { AppPageHeader, NovaOrb } from "@/components/layout/app-shell";
 
 const onboardingSchema = z.object({
   age: z.coerce.number().min(18).max(90),
@@ -188,10 +188,15 @@ export function OnboardingWizard() {
                 <Field label="Risk Tolerance"><Select value={values.riskTolerance} onValueChange={(value) => form.setValue("riskTolerance", value as OnboardingValues["riskTolerance"])}><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="High">High</SelectItem></Select></Field>
               </div>
             )}
-            <div className="rounded-xl border border-primary/20 bg-primary/10 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Live twin preview</p>
-              <p className="mt-2 text-2xl font-black">{monthlySurplus.toLocaleString()} SAR monthly surplus</p>
-              <p className="text-sm text-muted-foreground">This updates as your onboarding inputs change.</p>
+            <div className="rounded-2xl border border-blue-400/20 bg-gradient-to-br from-blue-500/10 to-violet-500/10 p-4">
+              <div className="flex items-center gap-3">
+                <NovaOrb className="size-10" />
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-300">Live twin preview</p>
+                  <p className="mt-1 text-2xl font-black">{monthlySurplus.toLocaleString()} SAR monthly surplus</p>
+                </div>
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">This updates as your onboarding inputs change.</p>
             </div>
             <div className="flex items-center justify-between">
               <Button type="button" variant="secondary" disabled={step === 0} onClick={() => setStep((current) => Math.max(0, current - 1))}>

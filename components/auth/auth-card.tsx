@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { NovaOrb } from "@/components/layout/app-shell";
 
 const isGitHubPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "true";
 
@@ -89,9 +90,12 @@ export function AuthCard({ mode }: { mode: Mode }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-16">
-      <Card className="w-full max-w-md border-primary/25">
+      <Card className="glass-panel-strong w-full max-w-md border-blue-400/25 bg-gradient-to-br from-blue-500/10 to-violet-500/10">
         <CardHeader>
-          <Badge variant="success" className="mb-4 w-fit">Financial Twin AI</Badge>
+          <div className="mb-4 flex items-center gap-3">
+            <NovaOrb className="size-10" />
+            <Badge variant="blue" className="w-fit">Financial Twin AI</Badge>
+          </div>
           <CardTitle className="text-3xl normal-case tracking-tight">{title}</CardTitle>
           <p className="text-sm text-muted-foreground">{helper}</p>
         </CardHeader>

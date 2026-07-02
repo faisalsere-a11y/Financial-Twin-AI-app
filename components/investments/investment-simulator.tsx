@@ -54,9 +54,9 @@ export function InvestmentSimulator() {
         description="Project stocks, ETF, crypto, savings, mutual funds, and real estate with compound growth and simple Monte Carlo simulation."
       />
       <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
-        <Card>
+        <Card className="border-blue-400/20 bg-blue-400/10">
           <CardHeader>
-            <CardTitle>Portfolio Inputs</CardTitle>
+            <CardTitle>Portfolio Console</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="flex flex-col gap-2">
@@ -103,8 +103,8 @@ export function InvestmentSimulator() {
                   <XAxis dataKey="year" stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
                   <YAxis stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={{ background: "#0d1423", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10 }} />
-                  <Area dataKey="optimistic" stroke="#16d69a" fill="#16d69a1f" />
-                  <Area dataKey="expected" stroke="#2f7cff" fill="#2f7cff22" />
+                  <Area dataKey="optimistic" stroke="#10b981" fill="#10b9811f" />
+                  <Area dataKey="expected" stroke="#3b82f6" fill="#3b82f622" />
                   <Area dataKey="conservative" stroke="#f6b50e" fill="#f6b50e17" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -121,8 +121,8 @@ export function InvestmentSimulator() {
                   <XAxis dataKey="month" stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
                   <YAxis stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={{ background: "#0d1423", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10 }} />
-                  <Line dataKey="optimistic" stroke="#16d69a" strokeWidth={2} dot={false} />
-                  <Line dataKey="expected" stroke="#2f7cff" strokeWidth={2} dot={false} />
+                  <Line dataKey="optimistic" stroke="#10b981" strokeWidth={2} dot={false} />
+                  <Line dataKey="expected" stroke="#3b82f6" strokeWidth={2} dot={false} />
                   <Line dataKey="pessimistic" stroke="#f6b50e" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
