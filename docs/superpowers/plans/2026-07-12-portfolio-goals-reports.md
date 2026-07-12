@@ -15,10 +15,10 @@
 
 ## Task 2: Goal portfolio
 
-- [ ] Add a failing source contract for active goals, forecast status, next contribution, risk signal, honest empty state, and real model-edit link.
-- [ ] Remove fake Wedding/Education slots and invented calendar events.
-- [ ] Render only active-profile goals with currency-correct progress and forecast evidence.
-- [ ] Run tests, lint, TypeScript, and build; commit.
+- [x] Add a failing source contract for active goals, forecast status, next contribution, risk signal, honest empty state, and real model-edit link.
+- [x] Remove fake Wedding/Education slots and invented calendar events.
+- [x] Render only active-profile goals with currency-correct progress and forecast evidence.
+- [x] Run tests, lint, TypeScript, and build; commit.
 
 ## Task 3: Report workspace
 
