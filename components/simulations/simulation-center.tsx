@@ -20,6 +20,7 @@ import { compareScenario } from "@/lib/financial/engine";
 import { sampleScenario } from "@/lib/financial/sample-data";
 import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import type { ScenarioComparison } from "@/lib/financial/types";
+import type { AdvisorSource } from "@/lib/presentation/nova-decision";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 
 const isGitHubPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "true";
@@ -37,7 +38,7 @@ const formSchema = z.object({
 });
 
 type SimulationForm = z.infer<typeof formSchema>;
-type SimulationResponse = { comparison: ScenarioComparison; advice: string[] };
+type SimulationResponse = { comparison: ScenarioComparison; advice: string[]; advisorSource: AdvisorSource };
 
 const defaults: SimulationForm = {
   price: 142000,
@@ -93,6 +94,7 @@ export function SimulationCenter() {
         const comparison = compareScenario(profile, scenario);
         return {
           comparison,
+          advisorSource: "deterministic",
           advice: [
             `${scenario.name} changes your monthly surplus by ${formatCurrency(comparison.delta.monthlySurplus, profile.currency)}.`,
             `Debt ratio moves to ${formatPercent(comparison.after.debtRatio, 1)} after this decision.`,

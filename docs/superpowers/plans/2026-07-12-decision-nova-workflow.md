@@ -15,10 +15,10 @@
 
 ## Task 2: Advisor provenance contract
 
-- [ ] Add failing tests for deterministic and OpenAI response shapes.
-- [ ] Return `{ recommendations, source }` from a new advisor response function while preserving the existing recommendations function.
-- [ ] Include `advisorSource` in the simulation API response and static fallback.
-- [ ] Run tests, lint, and TypeScript; commit.
+- [x] Add failing tests for deterministic and OpenAI response shapes.
+- [x] Return `{ recommendations, source }` from a new advisor response function while preserving the existing recommendations function.
+- [x] Include `advisorSource` in the simulation API response and static fallback.
+- [x] Run tests, lint, and TypeScript; commit.
 
 ## Task 3: Accessible decision lab
 

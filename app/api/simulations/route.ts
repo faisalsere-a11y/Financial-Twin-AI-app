@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateAdvisorRecommendations } from "@/lib/ai/advisor";
+import { generateAdvisorResponse } from "@/lib/ai/advisor";
 import { compareScenario } from "@/lib/financial/engine";
 import { sampleProfile } from "@/lib/financial/sample-data";
 import { financialProfileSchema } from "@/lib/profile/browser-store";
@@ -49,9 +49,9 @@ export async function POST(request: Request) {
   }
 
   const comparison = compareScenario(parsedProfile.success ? parsedProfile.data : sampleProfile, parsed.data);
-  const advice = await generateAdvisorRecommendations(comparison);
+  const advisor = await generateAdvisorResponse(comparison);
 
-  return NextResponse.json({ comparison, advice });
+  return NextResponse.json({ comparison, advice: advisor.recommendations, advisorSource: advisor.source });
 }
 
 export async function GET() {

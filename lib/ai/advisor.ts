@@ -1,5 +1,18 @@
 import OpenAI from "openai";
 import type { ScenarioComparison } from "@/lib/financial/types";
+import type { AdvisorSource } from "@/lib/presentation/nova-decision";
+
+export interface AdvisorResponse {
+  recommendations: string[];
+  source: AdvisorSource;
+}
+
+export function buildAdvisorResponse(recommendations: string[], source: AdvisorSource): AdvisorResponse {
+  return {
+    recommendations: [...new Set(recommendations.map((item) => item.trim()).filter(Boolean))].slice(0, 4),
+    source
+  };
+}
 
 function mockAdvice(comparison: ScenarioComparison) {
   const scenario = comparison.scenario.name.toLowerCase();
@@ -20,9 +33,9 @@ function mockAdvice(comparison: ScenarioComparison) {
   ];
 }
 
-export async function generateAdvisorRecommendations(comparison: ScenarioComparison) {
+export async function generateAdvisorResponse(comparison: ScenarioComparison): Promise<AdvisorResponse> {
   if (!process.env.OPENAI_API_KEY) {
-    return mockAdvice(comparison);
+    return buildAdvisorResponse(mockAdvice(comparison), "deterministic");
   }
 
   try {
@@ -58,14 +71,17 @@ export async function generateAdvisorRecommendations(comparison: ScenarioCompari
     });
 
     const content = response.choices[0]?.message.content;
-    if (!content) return mockAdvice(comparison);
+    if (!content) return buildAdvisorResponse(mockAdvice(comparison), "deterministic");
 
-    return content
-      .split(/\n+/)
-      .map((line) => line.replace(/^[-*\d.]\s*/, "").trim())
-      .filter(Boolean)
-      .slice(0, 4);
+    return buildAdvisorResponse(
+      content.split(/\n+/).map((line) => line.replace(/^[-*\d.]\s*/, "").trim()),
+      "openai"
+    );
   } catch {
-    return mockAdvice(comparison);
+    return buildAdvisorResponse(mockAdvice(comparison), "deterministic");
   }
+}
+
+export async function generateAdvisorRecommendations(comparison: ScenarioComparison) {
+  return (await generateAdvisorResponse(comparison)).recommendations;
 }
