@@ -1,354 +1,239 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Area, AreaChart, Bar, BarChart, ResponsiveContainer } from "recharts";
 import {
   ArrowRight,
   BrainCircuit,
-  Check,
-  CircleDollarSign,
+  CheckCircle2,
+  Database,
   GitCompareArrows,
-  Play,
+  LockKeyhole,
+  Radar,
   ShieldCheck,
   Sparkles,
-  Wand2,
-  Zap
+  Wand2
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { DecisionPreview } from "@/components/landing/decision-preview";
+import { LandingNav, NovaOrb } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { LandingNav, MiniMetric, NovaOrb } from "@/components/layout/app-shell";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
-const heroData = [
-  { month: "Jan", current: 4200, after: 4200 },
-  { month: "Feb", current: 4380, after: 4650 },
-  { month: "Mar", current: 4620, after: 5280 },
-  { month: "Apr", current: 4880, after: 6020 },
-  { month: "May", current: 5200, after: 7100 },
-  { month: "Jun", current: 5580, after: 8200 }
-];
-
-const riskBars = [
-  { name: "Debt", value: 61 },
-  { name: "Cash", value: 82 },
-  { name: "Goal", value: 74 },
-  { name: "Risk", value: 38 }
-];
-
-const features = [
+const journey = [
   {
-    icon: BrainCircuit,
-    title: "Living financial twin",
-    body: "A structured model of income, debt, assets, goals, emergency runway, and behavior signals."
+    number: "01",
+    icon: Database,
+    title: "Model what is true",
+    body: "Bring income, spending, debt, assets, goals, and risk tolerance into one coherent financial twin."
   },
   {
-    icon: Wand2,
-    title: "Decision simulations",
-    body: "Run car, house, loan, job loss, marriage, child, education, travel, and retirement scenarios."
-  },
-  {
+    number: "02",
     icon: GitCompareArrows,
-    title: "Current vs future",
-    body: "See how each choice changes cash flow, savings, debt ratio, health, and goal timing."
+    title: "Test the next move",
+    body: "Compare the current path with a car, home, investment, emergency, salary, or loan decision."
   },
   {
-    icon: Sparkles,
-    title: "NOVA AI advisor",
-    body: "Get plain-language recommendations like wait 8 months or raise the down payment by 15%."
+    number: "03",
+    icon: BrainCircuit,
+    title: "Understand the trade-off",
+    body: "NOVA turns the model delta into evidence, assumptions, risk signals, and a practical next action."
   }
 ];
 
-function MockDashboard() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.7, delay: 0.12 }}
-      className="glass-panel-strong premium-ring relative mx-auto w-full max-w-5xl overflow-hidden rounded-[2rem] p-4 text-left"
-    >
-      <div className="scanline pointer-events-none absolute inset-0 opacity-20" />
-      <div className="absolute -right-16 -top-16 size-52 rounded-full bg-violet-500/20 blur-3xl" />
-      <div className="grid gap-4 lg:grid-cols-[0.9fr_1.3fr]">
-        <div className="grid gap-4">
-          <div className="rounded-3xl border border-blue-400/20 bg-gradient-to-br from-blue-500/[0.12] to-violet-500/10 p-5">
-            <div className="flex items-center gap-4">
-              <div className="relative flex size-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
-                <NovaOrb className="size-10" />
-              </div>
-              <div>
-                <p className="text-xl font-black tracking-tight">Ahmed Al-Harbi</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Badge variant="success">Health 82</Badge>
-                  <Badge variant="blue">NOVA synced</Badge>
-                </div>
-              </div>
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <MiniMetric label="Net worth" value="320,450 SAR" />
-              <MiniMetric label="Monthly surplus" value="4,200 SAR" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground">Savings</p>
-                <p className="mt-2 text-xl font-black">52k SAR</p>
-                <Progress value={58} className="mt-4" />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground">Debt ratio</p>
-                <p className="mt-2 text-xl font-black text-amber-300">22%</p>
-                <Progress value={22} className="mt-4" indicatorClassName="bg-amber-400" />
-              </CardContent>
-            </Card>
-          </div>
-          <Card className="border-emerald-400/25 bg-emerald-400/10">
-            <CardContent className="flex items-center justify-between p-4">
-              <div>
-                <p className="font-black">Start Investment</p>
-                <p className="mt-1 text-xs text-muted-foreground">1,200 SAR/month</p>
-              </div>
-              <Badge variant="success">Safe</Badge>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="grid gap-4">
-          <Card>
-            <CardHeader className="flex-row items-start justify-between">
-              <div>
-                <CardTitle>Future Cash Flow Timeline</CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">Current path vs after decision</p>
-              </div>
-              <Badge variant="blue">12 month model</Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={heroData}>
-                    <defs>
-                      <linearGradient id="landingAfter" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="landingCurrent" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.22} />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <Area type="monotone" dataKey="current" stroke="#60a5fa" strokeWidth={2} fill="url(#landingCurrent)" />
-                    <Area type="monotone" dataKey="after" stroke="#10b981" strokeWidth={3} fill="url(#landingAfter)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
-            <Card className="border-violet-400/20 bg-violet-400/[0.08]">
-              <CardContent className="p-5">
-                <div className="mb-4 flex items-center gap-3">
-                  <NovaOrb className="size-9" />
-                  <p className="text-sm font-black text-violet-200">NOVA says</p>
-                </div>
-                <p className="text-sm leading-6 text-muted-foreground">
-                  Buying now keeps you safe, but investing first improves your 12-month net worth by 18,400 SAR.
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="h-40 p-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={riskBars}>
-                    <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#8b5cf6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
+const decisionGroups = [
+  { label: "Life", items: ["Buy a car", "Buy a home", "Education", "Family change"] },
+  { label: "Resilience", items: ["Job loss", "Emergency expense", "Debt change", "Salary increase"] },
+  { label: "Wealth", items: ["Start investing", "Retirement", "Portfolio growth", "Goal funding"] }
+];
+
+const faq = [
+  {
+    question: "Is Financial Twin a bank or financial adviser?",
+    answer: "No. It is an educational simulation and planning layer. It does not hold funds, move money, or replace regulated advice."
+  },
+  {
+    question: "Where do the numbers come from?",
+    answer: "The product uses deterministic cash-flow, debt, risk, health, goal, and investment engines. The sample journey uses the included Saudi profile in SAR."
+  },
+  {
+    question: "What happens when OpenAI is not configured?",
+    answer: "NOVA falls back to deterministic recommendations derived from the scenario comparison, so the core product remains usable without an API key."
+  },
+  {
+    question: "Can I export my analysis?",
+    answer: "The reports area supports CSV export from the financial model. Every export should be reviewed before it is used for a real decision."
+  }
+];
 
 export function LandingPage() {
   return (
-    <div className="gradient-mesh min-h-screen overflow-hidden">
+    <main className="gradient-mesh min-h-screen overflow-hidden">
       <LandingNav />
-      <section className="relative px-4 pb-20 pt-28">
-        <div className="absolute left-1/2 top-10 size-[42rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="container relative">
-          <div className="grid gap-12 min-[900px]:grid-cols-[0.9fr_1.1fr] min-[900px]:items-center">
-            <div>
-              <Badge variant="blue" className="mb-6">
-                <Zap className="mr-1 size-3" />
-                Financial simulation cockpit
-              </Badge>
-              <h1 className="max-w-4xl text-5xl font-black tracking-tight md:text-7xl">
-                Financial Twin AI
-              </h1>
-              <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-                Create a digital twin of your money, run decisions before they happen, and compare your current life
-                against the future path after each choice.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button size="lg" asChild>
-                  <Link href="/signup">
-                    Create your twin
-                    <ArrowRight data-icon="inline-end" />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="glass" asChild>
-                  <Link href="/dashboard">
-                    <Play data-icon="inline-start" />
-                    Open demo cockpit
-                  </Link>
-                </Button>
-              </div>
-              <div className="mt-9 grid max-w-xl grid-cols-3 gap-3">
-                <MiniMetric label="Demo income" value="18,500 SAR" />
-                <MiniMetric label="Net worth" value="320,450 SAR" />
-                <MiniMetric label="Health" value="82/100" />
-              </div>
+
+      <section className="relative px-4 pb-24 pt-32 lg:pb-32 lg:pt-40">
+        <div className="pointer-events-none absolute left-1/2 top-8 size-[44rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="container relative grid gap-14 xl:grid-cols-[0.82fr_1.18fr] xl:items-center">
+          <div>
+            <Badge variant="blue" className="mb-7 w-fit">
+              <Sparkles className="mr-1 size-3" aria-hidden="true" />
+              Financial foresight, explained
+            </Badge>
+            <h1 className="max-w-3xl text-5xl font-black leading-[0.98] tracking-[-0.05em] sm:text-6xl lg:text-7xl">
+              See the financial future of a decision <span className="gradient-text-blue">before you make it.</span>
+            </h1>
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-muted-foreground">
+              Build a living model of your money, compare the current path with the next move, and understand exactly
+              what changes across cash flow, debt, risk, and goals.
+            </p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Button size="lg" asChild>
+                <Link href="/signup">
+                  Create your twin <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/dashboard">Explore sample twin</Link>
+              </Button>
             </div>
-            <MockDashboard />
+            <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-muted-foreground">
+              <span className="flex items-center gap-2"><CheckCircle2 className="size-4 text-positive" aria-hidden="true" />No bank connection required</span>
+              <span className="flex items-center gap-2"><CheckCircle2 className="size-4 text-positive" aria-hidden="true" />Deterministic core model</span>
+              <span className="flex items-center gap-2"><CheckCircle2 className="size-4 text-positive" aria-hidden="true" />Light and dark themes</span>
+            </div>
+          </div>
+          <DecisionPreview />
+        </div>
+      </section>
+
+      <section aria-label="Product trust summary" className="border-y border-border bg-card/50">
+        <div className="container grid gap-px sm:grid-cols-3">
+          {[
+            ["Model", "Cash flow, debt, assets, goals, health"],
+            ["Region", "Saudi sample profile · SAR formatting"],
+            ["Boundary", "Educational simulation · no money movement"]
+          ].map(([label, value]) => (
+            <div key={label} className="px-5 py-6 sm:border-l sm:border-border sm:first:border-l-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary">{label}</p>
+              <p className="mt-2 text-sm font-semibold">{value}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="how-it-works" className="container scroll-mt-24 py-24 lg:py-32">
+        <div className="max-w-3xl">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">How it works</p>
+          <h2 className="mt-4 text-4xl font-black tracking-[-0.035em] sm:text-5xl">From financial noise to a decision you can explain.</h2>
+        </div>
+        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+          {journey.map((step) => {
+            const Icon = step.icon;
+            return (
+              <Card key={step.number} className="group min-h-72">
+                <CardContent className="flex h-full flex-col p-6">
+                  <div className="flex items-start justify-between">
+                    <span className="flex size-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+                      <Icon className="size-5" aria-hidden="true" />
+                    </span>
+                    <span className="text-sm font-black tabular-nums text-muted-foreground">{step.number}</span>
+                  </div>
+                  <h3 className="mt-10 text-xl font-black">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{step.body}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </section>
+
+      <section id="nova" className="scroll-mt-24 border-y border-border bg-card/45 py-24 lg:py-32">
+        <div className="container grid gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
+          <div>
+            <div className="flex items-center gap-4">
+              <NovaOrb className="size-12" />
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">NOVA intelligence</p>
+            </div>
+            <h2 className="mt-6 text-4xl font-black tracking-[-0.035em] sm:text-5xl">A recommendation is only useful when you can see why.</h2>
+            <p className="mt-5 max-w-xl leading-7 text-muted-foreground">
+              NOVA combines deterministic model changes with plain-language guidance. Every answer is framed by evidence,
+              assumptions, and the limits of the available information.
+            </p>
+          </div>
+          <div className="grid gap-3">
+            {[
+              [Radar, "Recommendation", "Choose the path that protects monthly flexibility, not only the lowest upfront cost."],
+              [GitCompareArrows, "Evidence", "Compare surplus, debt ratio, emergency runway, health score, and 12-month net worth."],
+              [Wand2, "Assumptions", "Scenario duration, sample profile, expected return, and recurring costs remain visible."],
+              [ShieldCheck, "Boundary", "Educational guidance—not a promise, bank decision, or regulated recommendation."]
+            ].map(([Icon, label, body]) => {
+              const ItemIcon = Icon as typeof Radar;
+              return (
+                <div key={label as string} className="grid gap-3 rounded-2xl border border-border bg-background/60 p-5 sm:grid-cols-[auto_1fr]">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><ItemIcon className="size-4" aria-hidden="true" /></span>
+                  <div><p className="font-black">{label as string}</p><p className="mt-1 text-sm leading-6 text-muted-foreground">{body as string}</p></div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <section id="features" className="container grid gap-5 py-20 md:grid-cols-2 lg:grid-cols-4">
-        {features.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <Card key={feature.title} className="group">
-              <CardHeader>
-                <span className="mb-3 flex size-11 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-400/10 text-blue-200 transition-transform group-hover:scale-105">
-                  <Icon className="size-5" />
-                </span>
-                <CardTitle className="text-base normal-case tracking-tight">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-6 text-muted-foreground">{feature.body}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </section>
-
-      <section className="container grid gap-8 py-16 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">Decision lab</p>
-          <h2 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">
-            Simulate the big move before your bank account feels it.
-          </h2>
-          <p className="mt-4 leading-7 text-muted-foreground">
-            Every scenario updates the twin instantly, then shows the exact delta across cash flow, debt, savings,
-            emergency runway, risk, and goal dates.
-          </p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {["Buy a house", "Start investing", "Lose job", "Emergency expense"].map((item, index) => (
-            <Card key={item} className={index === 1 ? "border-emerald-400/30 bg-emerald-400/10 shadow-glow-green" : ""}>
-              <CardContent className="flex items-center justify-between p-5">
-                <div>
-                  <p className="font-black">{item}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Current path vs after decision</p>
-                </div>
-                <ArrowRight className="size-5 text-blue-300" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section id="pricing" className="container py-20">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-300">Pricing</p>
-          <h2 className="mt-3 text-4xl font-black tracking-tight">Launch-ready plans for a real FinTech demo.</h2>
-          <p className="mt-4 text-muted-foreground">
-            Start free, then unlock unlimited simulations, AI advice, exports, and family planning.
-          </p>
+      <section className="container py-24 lg:py-32">
+        <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-end">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-positive">Decision coverage</p>
+            <h2 className="mt-4 text-4xl font-black tracking-[-0.035em]">One twin. Many possible futures.</h2>
+          </div>
+          <p className="max-w-2xl leading-7 text-muted-foreground">The existing model supports decisions across everyday life, financial resilience, and long-term wealth without changing the underlying profile.</p>
         </div>
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
-          {[
-            ["Starter", "0 SAR", ["1 financial twin", "5 simulations/month", "Goal tracking"]],
-            ["Pro", "49 SAR/mo", ["Unlimited simulations", "AI advisor", "CSV/PDF exports", "Monte Carlo"]],
-            ["Family Office", "249 SAR/mo", ["Multi-profile planning", "Advisor workspace", "Priority support"]]
-          ].map(([name, price, items], index) => (
-            <Card key={name as string} className={index === 1 ? "border-blue-400/[0.35] bg-blue-400/10 shadow-glow" : ""}>
-              <CardHeader>
-                <CardTitle className="text-base normal-case tracking-tight">{name}</CardTitle>
-                <p className="text-3xl font-black">{price}</p>
-              </CardHeader>
-              <CardContent className="grid gap-3">
-                {(items as string[]).map((item) => (
-                  <p key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="size-4 text-emerald-300" />
-                    {item}
-                  </p>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="container grid gap-5 py-16 lg:grid-cols-3">
-        {[
-          "This finally made large purchases feel measurable instead of emotional.",
-          "The current-vs-future timeline is exactly what my family needed before buying a house.",
-          "It feels like a private CFO for everyday decisions."
-        ].map((quote) => (
-          <Card key={quote}>
-            <CardContent className="p-6">
-              <p className="text-lg font-semibold leading-8">&quot;{quote}&quot;</p>
-              <p className="mt-5 text-sm text-muted-foreground">Saudi beta customer</p>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
-      <section id="faq" className="container py-20">
-        <div className="grid gap-5 lg:grid-cols-2">
-          {[
-            ["Is this a bank?", "No. It is a simulation and planning layer for decisions before money moves."],
-            ["Does AI replace an advisor?", "No. It explains tradeoffs and flags risks so advice conversations are better prepared."],
-            ["Can I export reports?", "Yes. Monthly, quarterly, annual, CSV, and demo PDF export flows are included."],
-            ["Is data private?", "The demo uses SQLite locally. Production deployments should add encryption, audit logs, and secure key management."]
-          ].map(([question, answer]) => (
-            <Card key={question}>
+          {decisionGroups.map((group) => (
+            <Card key={group.label}>
               <CardContent className="p-6">
-                <p className="font-black">{question}</p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{answer}</p>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">{group.label}</p>
+                <div className="mt-5 grid gap-3">
+                  {group.items.map((item) => <p key={item} className="flex items-center gap-3 text-sm font-semibold"><span className="size-1.5 rounded-full bg-positive" />{item}</p>)}
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </section>
 
-      <section className="container pb-24">
-        <Card className="overflow-hidden border-blue-400/30 bg-blue-400/10">
-          <CardContent className="relative flex flex-col items-start gap-6 p-8 md:flex-row md:items-center md:justify-between">
-            <div className="absolute -right-10 -top-12 text-[9rem] font-black leading-none text-blue-300/5">AI</div>
+      <section id="trust" className="container scroll-mt-24 pb-24 lg:pb-32">
+        <Card className="overflow-hidden border-primary/25 bg-primary/[0.055]">
+          <CardContent className="grid gap-10 p-7 lg:grid-cols-[1fr_1fr] lg:p-10">
             <div>
-              <p className="flex items-center gap-2 text-sm font-bold text-blue-200">
-                <ShieldCheck className="size-4" />
-                Investor-ready demo
-              </p>
-              <h2 className="mt-2 text-3xl font-black">Create a financial twin and test the next decision.</h2>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-primary"><LockKeyhole className="size-4" aria-hidden="true" />Trust by design</p>
+              <h2 className="mt-5 text-3xl font-black tracking-[-0.03em] sm:text-4xl">Know the data mode before you trust the answer.</h2>
             </div>
-            <Button size="lg" asChild>
-              <Link href="/signup">
-                Start now
-                <CircleDollarSign data-icon="inline-end" />
-              </Link>
-            </Button>
+            <div className="grid gap-5 text-sm leading-6 text-muted-foreground">
+              <p><strong className="text-foreground">Sample mode:</strong> uses the included Saudi profile and does not connect to a bank.</p>
+              <p><strong className="text-foreground">Local server mode:</strong> uses the repository&apos;s SQLite-backed account flow. Production deployments still require institution-grade encryption, audit logging, and retention controls.</p>
+              <p><strong className="text-foreground">AI mode:</strong> uses OpenAI only when a key is configured and otherwise returns deterministic scenario guidance.</p>
+            </div>
           </CardContent>
         </Card>
       </section>
-    </div>
+
+      <section id="faq" className="scroll-mt-24 border-y border-border bg-card/45 py-24">
+        <div className="container">
+          <div className="max-w-2xl"><p className="text-xs font-black uppercase tracking-[0.18em] text-primary">FAQ</p><h2 className="mt-4 text-4xl font-black tracking-[-0.035em]">Clarity before commitment.</h2></div>
+          <div className="mt-10 grid gap-4 lg:grid-cols-2">
+            {faq.map((item) => (
+              <Card key={item.question}><CardContent className="p-6"><h3 className="font-black">{item.question}</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">{item.answer}</p></CardContent></Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="container py-24">
+        <div className="relative overflow-hidden rounded-[2rem] border border-primary/25 bg-primary/10 p-8 sm:p-12">
+          <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-chart-3/20 blur-3xl" />
+          <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+            <div><p className="text-xs font-black uppercase tracking-[0.18em] text-primary">Your next decision</p><h2 className="mt-4 max-w-3xl text-4xl font-black tracking-[-0.04em] sm:text-5xl">Model it before money moves.</h2></div>
+            <Button size="lg" asChild><Link href="/signup">Create your financial twin <ArrowRight className="size-4" aria-hidden="true" /></Link></Button>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }

@@ -106,7 +106,7 @@ git commit -m "feat: add engine-backed landing preview model"
 - `LandingPage()` is a server component with no browser hooks or chart/motion libraries.
 - Root `/` always renders `LandingPage`; sample dashboard remains `/dashboard`.
 
-- [ ] **Step 1: Write failing source-contract tests**
+- [x] **Step 1: Write failing source-contract tests**
 
 ```ts
 import { existsSync, readFileSync } from "node:fs";
@@ -148,19 +148,19 @@ describe("landing experience", () => {
 });
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Expected: FAIL because the preview file does not exist and the current landing violates the contracts.
 
-- [ ] **Step 3: Implement `DecisionPreview`**
+- [x] **Step 3: Implement `DecisionPreview`**
 
 Render three tab buttons from `landingScenarioOptions`, the selected preview's sample-data label, health and monthly-impact metrics, NOVA recommendation/evidence/assumption blocks, an accessible text summary, and a six-point inline SVG chart derived from `preview.overview.cashFlow.slice(0, 6)`. Use semantic CSS variables for SVG strokes and link to `preview.simulationHref`.
 
-- [ ] **Step 4: Rebuild the server-rendered landing**
+- [x] **Step 4: Rebuild the server-rendered landing**
 
 Implement the six design sections in the approved spec. Use only real supported scenario names and capabilities. Replace testimonials and pricing with the NOVA evidence and trust sections. Update `LandingNav` anchors to `#how-it-works`, `#nova`, `#trust`, and `#faq`; update the command palette's old pricing destination to `/#how-it-works`; always return `<LandingPage />` from `app/page.tsx`; and add descriptive title-template, description, keywords, and robots metadata in `app/layout.tsx`.
 
-- [ ] **Step 5: Run tests, lint, typecheck, build, and commit**
+- [x] **Step 5: Run tests, lint, typecheck, build, and commit**
 
 Expected: all checks pass, `/` remains static, all 18 routes remain present, and landing first-load JS is materially lower than the current 302 kB.
 

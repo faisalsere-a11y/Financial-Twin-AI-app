@@ -316,8 +316,9 @@ export function LandingNav() {
       <div className="container flex h-16 items-center justify-between">
         <Brand href="/" />
         <nav aria-label="Landing page" className="hidden items-center gap-6 text-sm font-semibold text-muted-foreground md:flex">
-          <Link href="#features" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Features</Link>
-          <Link href="#pricing" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Pricing</Link>
+          <Link href="#how-it-works" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">How it works</Link>
+          <Link href="#nova" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">NOVA</Link>
+          <Link href="#trust" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Trust</Link>
           <Link href="#faq" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">FAQ</Link>
         </nav>
         <div className="flex items-center gap-1 sm:gap-2">

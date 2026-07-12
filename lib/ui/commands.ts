@@ -10,7 +10,7 @@ export const commands = [
   { label: "Notifications", href: "/settings#notifications", icon: "bell", hint: "Alerts" },
   { label: "Settings", href: "/settings", icon: "settings", hint: "Profile and security" },
   { label: "Financial Twin", href: "/dashboard#twin", icon: "brain", hint: "Health model" },
-  { label: "Plans", href: "/#pricing", icon: "currency", hint: "Pricing" }
+  { label: "Product tour", href: "/#how-it-works", icon: "currency", hint: "How Financial Twin works" }
 ] as const;
 
 export type CommandIcon = (typeof commands)[number]["icon"];
