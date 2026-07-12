@@ -17,7 +17,7 @@ export function Select({
       value={value}
       onChange={(event) => onValueChange?.(event.target.value)}
       className={cn(
-        "h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-foreground focus-visible:border-blue-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "h-11 w-full rounded-xl border border-input bg-card/80 px-3 py-2 text-sm text-foreground focus-visible:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className
       )}
       {...props}

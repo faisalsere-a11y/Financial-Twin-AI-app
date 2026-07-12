@@ -217,7 +217,7 @@ git commit -m "feat: establish semantic theme foundation"
 - Consumes: semantic colors from Task 1 and `next-themes` resolved theme.
 - Produces: UI primitives that render correctly in both themes and a toaster that follows the resolved theme.
 
-- [ ] **Step 1: Add failing static-render tests**
+- [x] **Step 1: Add failing static-render tests**
 
 ```ts
 import { renderToStaticMarkup } from "react-dom/server";
@@ -243,11 +243,11 @@ it("renders a labeled switch with semantic state styles", () => {
 });
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Expected: FAIL because the primitives contain dark-only literal classes.
 
-- [ ] **Step 3: Implement semantic primitives and toaster**
+- [x] **Step 3: Implement semantic primitives and toaster**
 
 Use `border-border`, `bg-card`, `bg-muted`, `text-foreground`, `text-muted-foreground`, `bg-primary`, `bg-secondary`, and semantic hover states in every listed primitive. Preserve component props and exports.
 
@@ -274,11 +274,11 @@ export function ThemedToaster() {
 
 Replace the hard-coded `Toaster` in `app/providers.tsx` with `<ThemedToaster />`, set `disableTransitionOnChange`, and keep system theme enabled.
 
-- [ ] **Step 4: Verify focused and full tests**
+- [x] **Step 4: Verify focused and full tests**
 
 Expected: all token and primitive assertions pass; existing engine tests remain green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add tests/ui-foundation.test.tsx app/providers.tsx components/ui

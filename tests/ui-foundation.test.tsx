@@ -33,4 +33,23 @@ describe("UI foundation", () => {
     expect(css).toContain("scroll-behavior: auto");
     expect(css).toContain("animation-duration: 0.01ms");
   });
+
+  it("renders primitives with semantic surface and text classes", () => {
+    const card = readFileSync("components/ui/card.tsx", "utf8");
+    const button = readFileSync("components/ui/button.tsx", "utf8");
+
+    expect(card).toContain("bg-card");
+    expect(card).toContain("text-card-foreground");
+    expect(button).toContain("border-border");
+    expect(button).not.toContain("border-white");
+  });
+
+  it("renders a labeled switch with semantic state styles", () => {
+    const html = readFileSync("components/ui/switch.tsx", "utf8");
+
+    expect(html).toContain('role="switch"');
+    expect(html).toContain("aria-checked={checked}");
+    expect(html).toContain("bg-primary");
+    expect(html).not.toContain("border-white");
+  });
 });
