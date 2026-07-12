@@ -31,7 +31,7 @@
 - Consumes: `scenarioLibrary`, `sampleProfile`, and `buildFinancialOverview`.
 - Produces: `landingScenarioOptions`, `buildLandingPreview(scenarioId)`, and `LandingPreviewViewModel`.
 
-- [ ] **Step 1: Write the failing adapter tests**
+- [x] **Step 1: Write the failing adapter tests**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -69,21 +69,21 @@ describe("landing decision preview", () => {
 });
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run `.\node_modules\.bin\vitest.cmd run tests\landing-preview.test.ts`.
 
 Expected: FAIL because `landing-preview.ts` does not exist.
 
-- [ ] **Step 3: Implement the adapter**
+- [x] **Step 3: Implement the adapter**
 
 Use the three exact scenario ids from the test. Return the selected scenario, `buildFinancialOverview(sampleProfile, scenario)`, current/after health values, an evidence sentence based on the signed surplus delta, a concise assumption string, and `/simulations?scenario=${scenario.type}`. Unknown ids return the investment scenario.
 
-- [ ] **Step 4: Run focused and full tests**
+- [x] **Step 4: Run focused and full tests**
 
 Expected: the landing-preview tests and all prior tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add lib/presentation/landing-preview.ts tests/landing-preview.test.ts
