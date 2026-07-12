@@ -152,7 +152,7 @@ function Topbar() {
   const { profile, source } = useFinancialProfile();
 
   return (
-    <header className="sticky top-0 z-30 flex h-[78px] items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-2xl lg:px-8">
+    <header className="app-print-hide sticky top-0 z-30 flex h-[78px] items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-2xl lg:px-8">
       <div className="hidden items-center gap-3 lg:flex">
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2">
           <NovaOrb className="size-7" />
@@ -224,7 +224,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="gradient-mesh min-h-screen">
-      <div className="fixed inset-y-0 left-0 z-40 hidden w-[280px] lg:block">
+      <div className="app-print-hide fixed inset-y-0 left-0 z-40 hidden w-[280px] lg:block">
         <Sidebar />
       </div>
       {mobileOpen && (
@@ -289,7 +289,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <Topbar />
-        <main id="main-content" className="subtle-grid relative min-h-[calc(100vh-78px)] overflow-hidden p-4 lg:p-8">
+        <main id="main-content" className="app-print-main subtle-grid relative min-h-[calc(100vh-78px)] overflow-hidden p-4 lg:p-8">
           <div className="pointer-events-none absolute right-8 top-8 size-80 rounded-full bg-chart-3/10 blur-3xl" />
           <div className="pointer-events-none absolute bottom-0 left-1/4 size-96 rounded-full bg-positive/[0.08] blur-3xl" />
           <div className="relative">{children}</div>
@@ -298,7 +298,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <button
         type="button"
         onClick={() => openCommandPalette()}
-        className="fixed bottom-4 right-4 hidden rounded-full border border-border bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-glass backdrop-blur transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:block"
+        className="app-print-hide fixed bottom-4 right-4 hidden rounded-full border border-border bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-glass backdrop-blur transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:block"
       >
         <span className="font-semibold text-foreground">Ctrl K</span> command
       </button>

@@ -22,8 +22,15 @@
 
 ## Task 3: Report workspace
 
-- [ ] Add a failing source contract for real report selection, active-profile CSV, print/PDF, inline export status, semantic chart, and accessible summary/table.
-- [ ] Make monthly, quarterly, and annual selections change the visible report state.
-- [ ] Keep client-generated CSV aligned with the active profile and make printing the actual PDF path.
-- [ ] Add print-safe layout rules and remove toast-only or non-selecting controls.
-- [ ] Run complete server/static verification, confirm domain-engine diffs are empty, and commit evidence.
+- [x] Add a failing source contract for real report selection, active-profile CSV, print/PDF, inline export status, semantic chart, and accessible summary/table.
+- [x] Make monthly, quarterly, and annual selections change the visible report state.
+- [x] Keep client-generated CSV aligned with the active profile and make printing the actual PDF path.
+- [x] Add print-safe layout rules and remove toast-only or non-selecting controls.
+- [x] Run complete server/static verification, confirm domain-engine diffs are empty, and commit evidence.
+
+Verification evidence captured on 2026-07-12:
+
+- Vitest passed 64/64 tests across 22 files; repository ESLint and `tsc --noEmit` completed without findings.
+- The server-capable build generated 18/18 pages; the report route is 253 kB first load, down from 260 kB before the rebuild.
+- The GitHub Pages build generated 14/14 pages and exported the static artifact with `app/api` restored afterward.
+- `lib/financial/engine.ts`, `lib/financial/investments.ts`, and `lib/reports/export.ts` remain unchanged from the branch merge base with `main`.
