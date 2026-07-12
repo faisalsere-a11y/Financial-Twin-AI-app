@@ -380,7 +380,7 @@ git commit -m "feat: connect accessible command palette"
 - Produces: `navItems`, `getPageMeta(pathname)`, and semantic product-shell regions.
 - Consumes: all existing authenticated route paths.
 
-- [ ] **Step 1: Write the failing navigation tests**
+- [x] **Step 1: Write the failing navigation tests**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -414,19 +414,19 @@ describe("product navigation", () => {
 });
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Expected: FAIL because the navigation module does not exist.
 
-- [ ] **Step 3: Implement navigation metadata**
+- [x] **Step 3: Implement navigation metadata**
 
 Create a typed array with `label`, `href`, `icon`, `hint`, and `eyebrow` values. `getPageMeta()` returns the matching entry and falls back to Overview for unknown authenticated paths.
 
-- [ ] **Step 4: Refactor shell semantics and theme surfaces**
+- [x] **Step 4: Refactor shell semantics and theme surfaces**
 
 Consume `navItems` in the shell and map icon keys locally. Add `aria-current="page"` to the active link. Use semantic surface classes everywhere. Label the sidebar `<nav aria-label="Primary navigation">`. Give the mobile overlay `role="dialog"`, `aria-modal="true"`, and a title, close it on Escape, lock background scroll while open, focus the first navigation link on open, and return focus to the menu trigger on close. Keep the existing responsive breakpoints and route paths.
 
-- [ ] **Step 5: Run tests, lint, build, and commit**
+- [x] **Step 5: Run tests, lint, build, and commit**
 
 Run:
 
