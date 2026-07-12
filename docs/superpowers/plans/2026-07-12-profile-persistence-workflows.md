@@ -49,11 +49,11 @@
 - Modify: `components/settings/settings-page.tsx`
 - Create: `tests/settings-experience.test.ts`
 
-- [ ] Write a failing contract for stable switch state, labels, mode disclosure, save/reset outcomes, and removal of demo-security framing.
-- [ ] Persist language, notifications, export re-authentication, and regional mode through the versioned store.
-- [ ] Persist profile name and currency through the active profile hook; keep account email read-only unless a server account boundary exists.
-- [ ] Retain `next-themes` persistence and expose system/light/dark explicitly.
-- [ ] Run tests, lint, TypeScript, and build; commit.
+- [x] Write a failing contract for stable switch state, labels, mode disclosure, save/reset outcomes, and removal of demo-security framing.
+- [x] Persist language, notifications, export re-authentication, and regional mode through the versioned store.
+- [x] Persist profile name and currency through the active profile hook; keep account email read-only unless a server account boundary exists.
+- [x] Retain `next-themes` persistence and expose system/light/dark explicitly.
+- [x] Run tests, lint, TypeScript, and build; commit.
 
 ## Task 5: One active profile across authenticated routes
 

@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Bell, Globe2, Lock, Moon, Shield, UserRound } from "lucide-react";
-import { toast } from "sonner";
+import { Bell, Database, Globe2, LockKeyhole, Palette, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import { AppPageHeader } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,27 +11,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectItem } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useAppPreferences } from "@/lib/profile/use-app-preferences";
+import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
+import type { AppPreferences } from "@/lib/profile/browser-store";
+import type { CurrencyCode } from "@/lib/financial/types";
 
 function SettingRow({
   icon: Icon,
+  id,
   title,
   description,
   children
 }: {
-  icon: typeof UserRound;
+  icon: typeof Bell;
+  id: string;
   title: string;
   description: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-background/55 p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex gap-3">
-        <span className="flex size-10 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-400/10 text-blue-200">
-          <Icon />
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+          <Icon className="size-4" aria-hidden="true" />
         </span>
         <div>
-          <p className="font-bold">{title}</p>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p id={`${id}-title`} className="font-bold text-foreground">{title}</p>
+          <p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
       </div>
       {children}
@@ -38,61 +45,191 @@ function SettingRow({
   );
 }
 
+function initialsFor(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const {
+    profile,
+    source,
+    savedAt: profileSavedAt,
+    isLoaded: profileLoaded,
+    save: saveActiveProfile,
+    reset: resetActiveProfile
+  } = useFinancialProfile();
+  const {
+    preferences,
+    savedAt: preferencesSavedAt,
+    isLoaded: preferencesLoaded,
+    save: saveAppPreferences,
+    reset: resetAppPreferences
+  } = useAppPreferences();
+  const profileHydrated = useRef(false);
+  const preferencesHydrated = useRef(false);
+  const [profileName, setProfileName] = useState(profile.name);
+  const [currency, setCurrency] = useState<CurrencyCode>(profile.currency);
+  const [draftPreferences, setDraftPreferences] = useState<AppPreferences>(preferences);
+  const [resetArmed, setResetArmed] = useState(false);
+  const [status, setStatus] = useState<{ kind: "info" | "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!profileLoaded || profileHydrated.current) return;
+    setProfileName(profile.name);
+    setCurrency(profile.currency);
+    profileHydrated.current = true;
+  }, [profile, profileLoaded]);
+
+  useEffect(() => {
+    if (!preferencesLoaded || preferencesHydrated.current) return;
+    setDraftPreferences(preferences);
+    preferencesHydrated.current = true;
+  }, [preferences, preferencesLoaded]);
+
+  const updatePreference = <Key extends keyof AppPreferences>(key: Key, value: AppPreferences[Key]) => {
+    setDraftPreferences((current) => ({ ...current, [key]: value }));
+    setStatus(null);
+    setResetArmed(false);
+  };
+
+  const saveSettings = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalizedName = profileName.trim();
+    if (normalizedName.length < 2) {
+      setStatus({ kind: "error", message: "Enter at least two characters for the profile name." });
+      return;
+    }
+
+    try {
+      saveActiveProfile({ ...profile, name: normalizedName, initials: initialsFor(normalizedName), currency });
+      saveAppPreferences(draftPreferences);
+      setResetArmed(false);
+      setStatus({ kind: "success", message: "Saved in this browser. Your active model and preferences are updated on this device." });
+    } catch {
+      setStatus({ kind: "error", message: "Settings could not be saved. Check browser storage access and try again." });
+    }
+  };
+
+  const restoreDefaults = () => {
+    if (!resetArmed) {
+      setResetArmed(true);
+      setStatus({ kind: "info", message: "This removes the browser-saved profile and preferences. Select confirm to continue." });
+      return;
+    }
+
+    try {
+      const profileResult = resetActiveProfile();
+      const preferencesResult = resetAppPreferences();
+      setProfileName(profileResult.profile.name);
+      setCurrency(profileResult.profile.currency);
+      setDraftPreferences(preferencesResult.preferences);
+      setTheme("system");
+      setResetArmed(false);
+      setStatus({ kind: "success", message: "Bundled defaults restored. Browser-saved profile and preference data were removed." });
+    } catch {
+      setStatus({ kind: "error", message: "Defaults could not be restored. Check browser storage access and try again." });
+    }
+  };
+
+  const latestSavedAt = [profileSavedAt, preferencesSavedAt].filter(Boolean).sort().at(-1);
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       <AppPageHeader
         title="Settings"
-        description="Manage profile, security, notifications, theme, language, and currency preferences."
+        description="Manage model identity, appearance, regional context, alerts, and this device's data boundary."
       />
-      <div className="grid gap-6">
+
+      <form onSubmit={saveSettings} className="grid gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Profile</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2"><Label>Name</Label><Input defaultValue="Ahmed Al-Harbi" /></div>
-            <div className="flex flex-col gap-2"><Label>Email</Label><Input defaultValue="ahmed@example.com" /></div>
-            <div className="flex flex-col gap-2"><Label>Language</Label><Select defaultValue="en"><SelectItem value="en">English</SelectItem><SelectItem value="ar">Arabic</SelectItem></Select></div>
-            <div className="flex flex-col gap-2"><Label>Currency</Label><Select defaultValue="SAR"><SelectItem value="SAR">SAR</SelectItem><SelectItem value="USD">USD</SelectItem><SelectItem value="AED">AED</SelectItem></Select></div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Preferences</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <SettingRow icon={Moon} title="Theme" description="Switch between dark and light mode.">
-              <Switch checked={theme !== "light"} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} />
-            </SettingRow>
-            <SettingRow icon={Bell} title="Notifications" description="Receive debt, goal, and risk alerts.">
-              <Switch checked onCheckedChange={() => toast.success("Notification preference updated.")} />
-            </SettingRow>
-            <SettingRow icon={Shield} title="Security" description="Require a fresh login before exports.">
-              <Switch checked onCheckedChange={() => toast.success("Security preference updated.")} />
-            </SettingRow>
-            <SettingRow icon={Globe2} title="Regional Mode" description="Use Saudi weekends, SAR formatting, and local calendar reminders.">
-              <Switch checked onCheckedChange={() => toast.success("Regional mode updated.")} />
-            </SettingRow>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lock className="text-blue-300" />
-              Demo Security Notes
+          <CardHeader className="border-b border-border">
+            <CardTitle className="flex items-center gap-2 text-sm normal-case tracking-tight">
+              <Database className="size-4 text-primary" aria-hidden="true" />Model identity
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm leading-6 text-muted-foreground">
-            SQLite, seeded credentials, and mocked AI are configured for a local hackathon demo. A production launch
-            should add encrypted fields, audit logs, KMS-backed secrets, transaction monitoring, and formal financial
-            advice disclaimers.
+          <CardContent className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-name">Profile name</Label>
+              <Input id="profile-name" autoComplete="name" value={profileName} onChange={(event) => { setProfileName(event.target.value); setStatus(null); }} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="account-email">Account email</Label>
+              <Input id="account-email" value="Managed by the active sign-in account" readOnly aria-describedby="account-email-note" />
+              <p id="account-email-note" className="text-xs leading-5 text-muted-foreground">Email changes require an account-management backend and are not available here.</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="currency">Model currency</Label>
+              <Select id="currency" value={currency} onValueChange={(value) => { setCurrency(value as CurrencyCode); setStatus(null); }}>
+                <SelectItem value="SAR">SAR — Saudi Riyal</SelectItem><SelectItem value="USD">USD — US Dollar</SelectItem><SelectItem value="EUR">EUR — Euro</SelectItem><SelectItem value="AED">AED — UAE Dirham</SelectItem>
+              </Select>
+            </div>
+            <div className="flex flex-col justify-end gap-2">
+              <p className="text-xs leading-5 text-muted-foreground">Income, expenses, debt, assets, goals, and risk comfort are edited in the full model builder.</p>
+              <Button type="button" variant="outline" asChild><Link href="/onboarding">Edit full financial model</Link></Button>
+            </div>
           </CardContent>
         </Card>
-        <Button onClick={() => toast.success("Settings saved.")}>Save settings</Button>
-      </div>
+
+        <Card>
+          <CardHeader className="border-b border-border">
+            <CardTitle className="flex items-center gap-2 text-sm normal-case tracking-tight">
+              <Palette className="size-4 text-primary" aria-hidden="true" />Experience preferences
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 p-5 sm:p-6">
+            <SettingRow icon={Palette} id="theme-setting" title="Theme" description="Follow the operating system or choose a persistent light or dark appearance.">
+              <div className="w-full sm:w-48"><Label htmlFor="theme" className="sr-only">Theme</Label><Select id="theme" value={theme ?? "system"} onValueChange={setTheme}><SelectItem value="system">System</SelectItem><SelectItem value="light">Light</SelectItem><SelectItem value="dark">Dark</SelectItem></Select></div>
+            </SettingRow>
+            <SettingRow icon={Globe2} id="language-setting" title="Interface language" description="Choose the saved language preference. English remains the available interface in this build.">
+              <div className="w-full sm:w-48"><Label htmlFor="language" className="sr-only">Interface language</Label><Select id="language" value={draftPreferences.language} onValueChange={(value) => updatePreference("language", value as AppPreferences["language"])}><SelectItem value="en">English</SelectItem><SelectItem value="ar">Arabic preference</SelectItem></Select></div>
+            </SettingRow>
+            <SettingRow icon={Bell} id="notifications" title="Decision alerts" description="Save whether the interface should surface debt, goal, and risk reminders when those signals are available.">
+              <Switch id="notifications" aria-labelledby="notifications-title" checked={draftPreferences.notifications} onCheckedChange={(checked) => updatePreference("notifications", checked)} />
+            </SettingRow>
+            <SettingRow icon={LockKeyhole} id="export-reauthentication" title="Export re-authentication" description="Save a preference to require a fresh account check before sensitive exports when server enforcement is available.">
+              <Switch id="export-reauthentication" aria-labelledby="export-reauthentication-title" checked={draftPreferences.exportReauthentication} onCheckedChange={(checked) => updatePreference("exportReauthentication", checked)} />
+            </SettingRow>
+            <SettingRow icon={Globe2} id="regional-mode" title="Saudi regional context" description="Use SAR-first formatting and Saudi context in model explanations. This does not change the calculation engine.">
+              <Switch id="regional-mode" aria-labelledby="regional-mode-title" checked={draftPreferences.regionalMode} onCheckedChange={(checked) => updatePreference("regionalMode", checked)} />
+            </SettingRow>
+          </CardContent>
+        </Card>
+
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm normal-case tracking-tight">
+              <ShieldCheck className="size-4 text-primary" aria-hidden="true" />Data boundary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 text-sm leading-6 text-muted-foreground sm:grid-cols-[1fr_auto] sm:items-end">
+            <div>
+              <p>Your financial model and these preferences are stored in this browser. No bank connection, cloud profile sync, or background account import is represented.</p>
+              <p className="mt-2 text-xs">Active source: {source === "saved" ? "browser-saved profile" : "bundled sample profile"}. {latestSavedAt ? `Last saved ${new Date(latestSavedAt).toLocaleString()}.` : "No browser save yet."}</p>
+            </div>
+            <Button type="button" variant={resetArmed ? "destructive" : "outline"} onClick={restoreDefaults}>
+              <RotateCcw data-icon="inline-start" aria-hidden="true" />
+              {resetArmed ? "Confirm restore bundled defaults" : "Restore bundled defaults"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {status && (
+          <div aria-live="polite" role={status.kind === "error" ? "alert" : "status"} className={status.kind === "error" ? "rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive" : status.kind === "success" ? "rounded-xl border border-positive/25 bg-positive/10 p-3 text-sm text-positive" : "rounded-xl border border-primary/25 bg-primary/10 p-3 text-sm text-foreground"}>
+            {status.message}
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <Button type="submit" size="lg"><Save data-icon="inline-start" aria-hidden="true" />Save settings</Button>
+        </div>
+      </form>
     </div>
   );
 }
