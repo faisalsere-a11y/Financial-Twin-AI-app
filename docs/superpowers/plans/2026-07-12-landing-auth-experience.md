@@ -178,7 +178,7 @@ git commit -m "feat: rebuild evidence-led landing experience"
 **Interfaces:**
 - Produces: `AuthMode`, `authPresentation`, `getAuthDefaults(mode)`, `getAuthDestination(mode)`, and `sampleCredentials`.
 
-- [ ] **Step 1: Write failing contract tests**
+- [x] **Step 1: Write failing contract tests**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -205,19 +205,19 @@ describe("auth presentation", () => {
 });
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Expected: FAIL because the presentation module does not exist.
 
-- [ ] **Step 3: Implement the pure contract**
+- [x] **Step 3: Implement the pure contract**
 
 Define copy for login, signup, and forgot modes, including title, helper, submit label, pending label, optional unavailable message, and destination. Return new empty defaults on every call. Keep sample credentials in the pure module for the explicit fill action.
 
-- [ ] **Step 4: Run focused and full tests**
+- [x] **Step 4: Run focused and full tests**
 
 Expected: all auth and existing tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add lib/auth/presentation.ts tests/auth-presentation.test.ts
