@@ -37,11 +37,11 @@
 - Modify: `components/onboarding/onboarding-wizard.tsx`
 - Create: `tests/onboarding-experience.test.ts`
 
-- [ ] Write a failing source contract for labels, descriptions, field errors, status announcements, storage disclosure, and dashboard transition.
-- [ ] Hydrate the form from the active profile and use the financial engine for the live summary.
-- [ ] Add responsive step navigation, completion state, wide-screen summary, and explicit review/save actions.
-- [ ] Save the converted profile, announce success inline, and route to `/dashboard`; expose failures inline.
-- [ ] Run tests, lint, TypeScript, and build; commit.
+- [x] Write a failing source contract for labels, descriptions, field errors, status announcements, storage disclosure, and dashboard transition.
+- [x] Hydrate the form from the active profile and use the financial engine for the live summary.
+- [x] Add responsive step navigation, completion state, wide-screen summary, and explicit review/save actions.
+- [x] Save the converted profile, announce success inline, and route to `/dashboard`; expose failures inline.
+- [x] Run tests, lint, TypeScript, and build; commit.
 
 ## Task 4: Durable settings and truthful controls
 
