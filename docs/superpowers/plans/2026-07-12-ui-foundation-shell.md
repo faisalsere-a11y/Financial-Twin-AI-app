@@ -297,7 +297,7 @@ git commit -m "feat: make UI primitives theme aware"
 - Produces: `COMMAND_PALETTE_EVENT`, `commands`, `filterCommands(query)`, and `openCommandPalette()`.
 - Consumes: existing route paths and command labels.
 
-- [ ] **Step 1: Write failing command-contract tests**
+- [x] **Step 1: Write failing command-contract tests**
 
 ```ts
 import { describe, expect, it, vi } from "vitest";
@@ -322,11 +322,11 @@ describe("command palette contract", () => {
 });
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Expected: FAIL because `lib/ui/commands.ts` does not exist.
 
-- [ ] **Step 3: Implement the pure command module**
+- [x] **Step 3: Implement the pure command module**
 
 ```ts
 export const COMMAND_PALETTE_EVENT = "financial-twin:open-command-palette";
@@ -356,11 +356,11 @@ export function openCommandPalette(target: Pick<Window, "dispatchEvent"> = windo
 }
 ```
 
-- [ ] **Step 4: Refactor the palette and launch control**
+- [x] **Step 4: Refactor the palette and launch control**
 
 Map the icon string to Lucide components inside `command-palette.tsx`. Listen for both Ctrl/Cmd+K and `COMMAND_PALETTE_EVENT`. Render the overlay with `role="dialog"`, `aria-modal="true"`, `aria-labelledby="command-palette-title"`, a visually hidden title, `aria-label="Search commands"`, and a real close button. On close, return focus to the previously active element. The top-bar search button calls `openCommandPalette()`.
 
-- [ ] **Step 5: Run tests, lint, and commit**
+- [x] **Step 5: Run tests, lint, and commit**
 
 Expected: command tests and full suite pass; lint is clean.
 

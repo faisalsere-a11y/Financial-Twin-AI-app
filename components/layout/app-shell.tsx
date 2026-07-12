@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { openCommandPalette } from "@/lib/ui/commands";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, hint: "Financial cockpit" },
@@ -145,7 +146,7 @@ function Topbar() {
         </Badge>
       </div>
       <div className="flex items-center gap-2 lg:ml-auto">
-        <Button variant="glass" size="sm" className="hidden md:inline-flex">
+        <Button variant="glass" size="sm" className="hidden md:inline-flex" onClick={() => openCommandPalette()}>
           <Search data-icon="inline-start" />
           Cmd / Ctrl K
         </Button>
