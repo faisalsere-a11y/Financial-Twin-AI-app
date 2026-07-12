@@ -153,7 +153,7 @@ export function InvestmentSimulator() {
             summary={projectionSummary}
             action={<div className="flex flex-wrap gap-3 text-xs"><span className="text-caution">Conservative</span><span className="text-primary">Expected</span><span className="text-positive">Optimistic</span></div>}
           >
-            <div className="h-80">
+            <div className="h-80" aria-hidden="true">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={projection.points}>
                   <CartesianGrid stroke={chartTheme.grid} vertical={false} />
@@ -174,7 +174,7 @@ export function InvestmentSimulator() {
             summary={rangeSummary}
             action={<div className="flex flex-wrap gap-3 text-xs"><span className="text-caution">P10</span><span className="text-primary">P50</span><span className="text-positive">P90</span></div>}
           >
-            <div className="h-80">
+            <div className="h-80" aria-hidden="true">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monteCarlo.paths}>
                   <CartesianGrid stroke={chartTheme.grid} vertical={false} />

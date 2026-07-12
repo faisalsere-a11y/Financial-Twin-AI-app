@@ -35,4 +35,22 @@ describe("advisor provenance", () => {
     expect(response.recommendations).toHaveLength(4);
     await expect(generateAdvisorRecommendations(comparison)).resolves.toEqual(response.recommendations);
   });
+
+  it("describes debt direction honestly and avoids car-specific advice for investments", async () => {
+    delete process.env.OPENAI_API_KEY;
+    const comparison = compareScenario(sampleProfile, {
+      ...sampleScenario,
+      id: "salary-rise",
+      name: "Salary increase",
+      type: "salary",
+      liabilityDelta: 0,
+      monthlyDebtPaymentDelta: 0,
+      monthlyIncomeDelta: 4_000,
+      upfrontCost: 0
+    });
+    const salaryAdvice = await generateAdvisorResponse(comparison);
+
+    expect(salaryAdvice.recommendations[0]).toMatch(/decreases|unchanged/i);
+    expect(salaryAdvice.recommendations.join(" ")).not.toMatch(/down payment|upfront payment/i);
+  });
 });

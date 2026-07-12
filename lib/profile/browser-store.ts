@@ -4,6 +4,7 @@ import type { FinancialProfile } from "../financial/types";
 
 export const PROFILE_STORAGE_KEY = "financial-twin.profile.v1";
 export const PREFERENCES_STORAGE_KEY = "financial-twin.preferences.v1";
+export const STATIC_STORAGE_SUBJECT = "static-sample";
 export const PROFILE_UPDATED_EVENT = "financial-twin:profile-updated";
 export const PREFERENCES_UPDATED_EVENT = "financial-twin:preferences-updated";
 
@@ -124,34 +125,46 @@ function parseStoredValue<T>(storage: KeyValueStorage, key: string, schema: z.Zo
   }
 }
 
-export function readProfile(storage: KeyValueStorage): ProfileStoreResult {
-  const envelope = parseStoredValue(storage, PROFILE_STORAGE_KEY, profileEnvelopeSchema);
+function scopedStorageKey(prefix: string, subject: string) {
+  return `${prefix}:${encodeURIComponent(subject)}`;
+}
+
+export function profileStorageKey(subject: string) {
+  return scopedStorageKey(PROFILE_STORAGE_KEY, subject);
+}
+
+export function preferencesStorageKey(subject: string) {
+  return scopedStorageKey(PREFERENCES_STORAGE_KEY, subject);
+}
+
+export function readProfile(storage: KeyValueStorage, subject: string): ProfileStoreResult {
+  const envelope = parseStoredValue(storage, profileStorageKey(subject), profileEnvelopeSchema);
   if (envelope) return { profile: envelope.profile, source: "saved", savedAt: envelope.savedAt };
   return { profile: financialProfileSchema.parse(sampleProfile), source: "sample", savedAt: null };
 }
 
-export function saveProfile(storage: KeyValueStorage, profile: FinancialProfile, savedAt = new Date().toISOString()): ProfileStoreResult {
+export function saveProfile(storage: KeyValueStorage, subject: string, profile: FinancialProfile, savedAt = new Date().toISOString()): ProfileStoreResult {
   const envelope = profileEnvelopeSchema.parse({ version: 1, savedAt, profile });
-  storage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(envelope));
+  storage.setItem(profileStorageKey(subject), JSON.stringify(envelope));
   return { profile: envelope.profile, source: "saved", savedAt: envelope.savedAt };
 }
 
-export function resetProfile(storage: KeyValueStorage) {
-  storage.removeItem(PROFILE_STORAGE_KEY);
+export function resetProfile(storage: KeyValueStorage, subject: string) {
+  storage.removeItem(profileStorageKey(subject));
 }
 
-export function readPreferences(storage: KeyValueStorage): PreferencesStoreResult {
-  const envelope = parseStoredValue(storage, PREFERENCES_STORAGE_KEY, preferencesEnvelopeSchema);
+export function readPreferences(storage: KeyValueStorage, subject: string): PreferencesStoreResult {
+  const envelope = parseStoredValue(storage, preferencesStorageKey(subject), preferencesEnvelopeSchema);
   if (envelope) return { preferences: envelope.preferences, savedAt: envelope.savedAt };
   return { preferences: preferencesSchema.parse(defaultPreferences), savedAt: null };
 }
 
-export function savePreferences(storage: KeyValueStorage, preferences: AppPreferences, savedAt = new Date().toISOString()): PreferencesStoreResult {
+export function savePreferences(storage: KeyValueStorage, subject: string, preferences: AppPreferences, savedAt = new Date().toISOString()): PreferencesStoreResult {
   const envelope = preferencesEnvelopeSchema.parse({ version: 1, savedAt, preferences });
-  storage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(envelope));
+  storage.setItem(preferencesStorageKey(subject), JSON.stringify(envelope));
   return { preferences: envelope.preferences, savedAt: envelope.savedAt };
 }
 
-export function resetPreferences(storage: KeyValueStorage) {
-  storage.removeItem(PREFERENCES_STORAGE_KEY);
+export function resetPreferences(storage: KeyValueStorage, subject: string) {
+  storage.removeItem(preferencesStorageKey(subject));
 }

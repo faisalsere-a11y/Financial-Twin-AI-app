@@ -4,6 +4,11 @@ import { generateAdvisorResponse } from "@/lib/ai/advisor";
 import { compareScenario } from "@/lib/financial/engine";
 import { sampleProfile } from "@/lib/financial/sample-data";
 import { financialProfileSchema } from "@/lib/profile/browser-store";
+import { auth } from "@/lib/auth";
+import { checkSimulationRateLimit } from "@/lib/server/simulation-rate-limit";
+
+const configuredRateLimit = Number(process.env.SIMULATION_RATE_LIMIT_PER_MINUTE ?? 10);
+const rateLimit = Number.isFinite(configuredRateLimit) && configuredRateLimit > 0 ? Math.floor(configuredRateLimit) : 10;
 
 const simulationSchema = z.object({
   id: z.string().default("custom-scenario"),
@@ -33,7 +38,25 @@ const simulationSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { scenario?: unknown; profile?: unknown } | null;
+  const session = await auth();
+  const user = session?.user as { id?: string; email?: string | null } | undefined;
+  const subject = user?.id || user?.email;
+  if (!subject) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+
+  const retryAfter = checkSimulationRateLimit(subject, rateLimit);
+  if (retryAfter !== null) {
+    return NextResponse.json(
+      { error: "Simulation limit reached. Try again shortly." },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+
+  let body: { scenario?: unknown; profile?: unknown } | null;
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return NextResponse.json({ error: "Invalid simulation request." }, { status: 400 });
+  }
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Invalid simulation request." }, { status: 400 });
   }

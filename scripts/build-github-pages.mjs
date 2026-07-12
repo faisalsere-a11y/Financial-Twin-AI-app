@@ -8,8 +8,12 @@ const apiPath = join(root, "app", "api");
 const apiBackupPath = join(root, ".api.__github_pages_backup__");
 const outPath = join(root, "out");
 const docsPath = join(root, "docs");
+const docsKnowledgePath = join(docsPath, "superpowers");
+const docsKnowledgeBackupPath = join(root, ".docs-superpowers.__github_pages_backup__");
 const buildCommand = process.platform === "win32" ? "cmd.exe" : "npm";
-const buildArgs = process.platform === "win32" ? ["/d", "/s", "/c", "npm.cmd run build"] : ["run", "build"];
+const buildArgs = process.platform === "win32"
+  ? ["/d", "/s", "/c", "node scripts\\clean-next.mjs && node_modules\\.bin\\prisma.cmd generate && node_modules\\.bin\\next.cmd build"]
+  : ["run", "build"];
 
 async function restoreApi() {
   if (existsSync(apiBackupPath) && !existsSync(apiPath)) {
@@ -17,8 +21,15 @@ async function restoreApi() {
   }
 }
 
-if (existsSync(apiBackupPath)) {
-  throw new Error(`Refusing to continue because ${apiBackupPath} already exists.`);
+async function restoreDocsKnowledge() {
+  if (existsSync(docsKnowledgeBackupPath)) {
+    await mkdir(docsPath, { recursive: true });
+    await rename(docsKnowledgeBackupPath, docsKnowledgePath);
+  }
+}
+
+if (existsSync(apiBackupPath) || existsSync(docsKnowledgeBackupPath)) {
+  throw new Error("Refusing to continue because a GitHub Pages backup path already exists.");
 }
 
 try {
@@ -43,10 +54,12 @@ try {
     throw new Error(`GitHub Pages build failed with exit code ${result.status}: ${result.error?.message ?? "no spawn error"}`);
   }
 
+  if (existsSync(docsKnowledgePath)) await rename(docsKnowledgePath, docsKnowledgeBackupPath);
   await rm(docsPath, { recursive: true, force: true });
   await mkdir(docsPath, { recursive: true });
   await cp(outPath, docsPath, { recursive: true });
   await writeFile(join(docsPath, ".nojekyll"), "");
 } finally {
   await restoreApi();
+  await restoreDocsKnowledge();
 }

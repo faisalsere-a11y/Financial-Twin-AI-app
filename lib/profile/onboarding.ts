@@ -85,11 +85,17 @@ function totalMonthlyIncome(profile: FinancialProfile) {
   return profile.income.salaryMonthly + profile.income.bonusesAnnual / 12 + profile.income.otherMonthly;
 }
 
+function primaryGoalFor(profile: FinancialProfile) {
+  return profile.goals.find((goal) => goal.category === "House")
+    ?? profile.goals.find((goal) => goal.category !== "Emergency")
+    ?? profile.goals[0];
+}
+
 export function profileToOnboardingValues(profile: FinancialProfile): OnboardingValues {
   const personalLoan = profile.debts.find((debt) => debt.type === "personal-loan");
   const creditCard = profile.debts.find((debt) => debt.type === "credit-card");
   const emergencyGoal = profile.goals.find((goal) => goal.category === "Emergency");
-  const primaryGoal = profile.goals.find((goal) => goal.category === "House") ?? profile.goals.find((goal) => goal.category !== "Emergency") ?? profile.goals[0];
+  const primaryGoal = primaryGoalFor(profile);
 
   return {
     age: profile.age,
@@ -140,11 +146,25 @@ export function onboardingToFinancialProfile(values: OnboardingValues, baseProfi
     debts.push({ label: "Credit Card", balance: values.creditCardBalance, monthlyPayment: 0, apr: 0, type: "credit-card" });
   }
 
+  const selectedPrimaryGoal = primaryGoalFor(baseProfile);
   const goals = baseProfile.goals.map((goal) => {
     if (goal.category === "Emergency") return { ...goal, currentAmount: values.emergencyFund };
-    if (goal.category === "House") return { ...goal, name: values.goal, targetAmount: values.goalAmount };
+    if (goal.id === selectedPrimaryGoal?.id) return { ...goal, name: values.goal, targetAmount: values.goalAmount };
     return { ...goal };
   });
+
+  if (!goals.some((goal) => goal.category === "Emergency")) {
+    goals.push({
+      id: `${baseProfile.id}-emergency`, name: "Emergency Fund", category: "Emergency", targetAmount: Math.max(values.emergencyFund, values.expenses * 6),
+      currentAmount: values.emergencyFund, monthlyContribution: 0, targetDate: "2027-12-31", priority: "High"
+    });
+  }
+  if (!selectedPrimaryGoal || selectedPrimaryGoal.category === "Emergency") {
+    goals.push({
+      id: `${baseProfile.id}-primary`, name: values.goal, category: "House", targetAmount: values.goalAmount,
+      currentAmount: 0, monthlyContribution: 0, targetDate: "2030-12-31", priority: "High"
+    });
+  }
 
   return {
     ...baseProfile,

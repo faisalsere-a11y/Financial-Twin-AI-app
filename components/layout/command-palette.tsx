@@ -46,7 +46,7 @@ const focusableSelector = [
   "[tabindex]:not([tabindex='-1'])"
 ].join(",");
 
-export function CommandPalette() {
+export function CommandPalette({ onOpenChange }: { onOpenChange?: (open: boolean) => void }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -58,13 +58,15 @@ export function CommandPalette() {
   const show = useCallback(() => {
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setOpen(true);
-  }, []);
+    onOpenChange?.(true);
+  }, [onOpenChange]);
 
   const close = useCallback(() => {
     setOpen(false);
+    onOpenChange?.(false);
     setQuery("");
     requestAnimationFrame(() => previousFocusRef.current?.focus());
-  }, []);
+  }, [onOpenChange]);
 
   useEffect(() => {
     const onOpenRequest = () => show();

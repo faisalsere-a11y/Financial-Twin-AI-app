@@ -35,3 +35,19 @@ Final verification evidence captured on 2026-07-12:
 - Static audit found no TODO/FIXME/placeholder copy, fabricated activity, toast-only success path, or hard-coded dark chart colors in `app`, `components`, or `lib`.
 - `lib/financial/engine.ts`, `lib/financial/investments.ts`, and `lib/reports/export.ts` remain unchanged from the branch merge base with `main`.
 - Exact Lighthouse scores are environment-limited: no Lighthouse executable is installed in the repository or bundled runtimes, and adding/downloading one would violate the no-unnecessary-dependency constraint. The locally available browser checks covered headings, landmarks, labels, accessible names, alternatives, responsive overflow, console health, theme behavior, and keyboard navigation instead; no Lighthouse score is claimed.
+
+## Task 3: Independent-review hardening
+
+- [x] Enforce server-mode route/API authentication while preserving explicit public static sample mode.
+- [x] Scope browser model and preference storage to the active account and prove account isolation.
+- [x] Add per-user simulation API rate limits and AI timeout protection.
+- [x] Fix goal round trips, scenario-aware deterministic advice, and durable-registration failure behavior.
+- [x] Remove inert settings promises, honor reduced motion in JavaScript, and make modal backgrounds inert.
+- [ ] Re-run all automated, server/static, browser, and protected-engine gates; record evidence and obtain a clean follow-up review.
+
+Hardening verification evidence captured on 2026-07-12:
+
+- Vitest passed 77/77 tests across 24 files, including behavioral account-isolation, goal-round-trip, deterministic-advice, and per-user rate-limit cases; ESLint, `tsc --noEmit`, and `git diff --check` also passed.
+- The authenticated server build generated 18/18 routes and the explicit GitHub Pages sample generated 14/14 routes. The export helper restored `app/api`, preserved all nine tracked planning/specification files, and left no backup paths behind.
+- Browser verification proved anonymous app routes redirect to login, anonymous simulation POST returns 401, durable registration and login succeed, account A reloads its saved model, and account B receives the untouched sample model. Modal background isolation and an error-free console were also verified.
+- The three protected financial/report engines remain byte-for-byte unchanged from `HEAD`; follow-up independent review remains the final open gate.

@@ -60,4 +60,35 @@ describe("onboarding profile adapter", () => {
     expect(profile.goals.find((goal) => goal.category === "House")?.targetAmount).toBe(320_000);
     expect(profile.riskTolerance).toBe("High");
   });
+
+  it("round trips the same non-emergency goal selected for onboarding", () => {
+    const base = {
+      ...sampleProfile,
+      goals: [
+        { ...sampleProfile.goals[0], category: "Emergency" as const },
+        { ...sampleProfile.goals[1], id: "retirement", category: "Retirement" as const, name: "Retire well" }
+      ]
+    };
+    const values = profileToOnboardingValues(base);
+    const updated = onboardingToFinancialProfile({ ...values, goal: "Retire earlier", goalAmount: 900_000 }, base);
+
+    expect(updated.goals.find((goal) => goal.id === "retirement")).toMatchObject({
+      name: "Retire earlier",
+      targetAmount: 900_000
+    });
+  });
+
+  it("creates primary and emergency goals when the base profile has none", () => {
+    const base = { ...sampleProfile, goals: [] };
+    const updated = onboardingToFinancialProfile(
+      { ...profileToOnboardingValues(base), emergencyFund: 42_000, goal: "First home", goalAmount: 250_000 },
+      base
+    );
+
+    expect(updated.goals.find((goal) => goal.category === "Emergency")?.currentAmount).toBe(42_000);
+    expect(updated.goals.find((goal) => goal.category !== "Emergency")).toMatchObject({
+      name: "First home",
+      targetAmount: 250_000
+    });
+  });
 });

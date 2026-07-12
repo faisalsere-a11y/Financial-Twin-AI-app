@@ -3,17 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Bell, Database, Globe2, LockKeyhole, Palette, RotateCcw, Save, ShieldCheck } from "lucide-react";
+import { Database, Palette, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import { AppPageHeader } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectItem } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { useAppPreferences } from "@/lib/profile/use-app-preferences";
 import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
-import type { AppPreferences } from "@/lib/profile/browser-store";
 import type { CurrencyCode } from "@/lib/financial/types";
 
 function SettingRow({
@@ -23,7 +20,7 @@ function SettingRow({
   description,
   children
 }: {
-  icon: typeof Bell;
+  icon: typeof Palette;
   id: string;
   title: string;
   description: string;
@@ -65,18 +62,9 @@ export function SettingsPage() {
     save: saveActiveProfile,
     reset: resetActiveProfile
   } = useFinancialProfile();
-  const {
-    preferences,
-    savedAt: preferencesSavedAt,
-    isLoaded: preferencesLoaded,
-    save: saveAppPreferences,
-    reset: resetAppPreferences
-  } = useAppPreferences();
   const profileHydrated = useRef(false);
-  const preferencesHydrated = useRef(false);
   const [profileName, setProfileName] = useState(profile.name);
   const [currency, setCurrency] = useState<CurrencyCode>(profile.currency);
-  const [draftPreferences, setDraftPreferences] = useState<AppPreferences>(preferences);
   const [resetArmed, setResetArmed] = useState(false);
   const [status, setStatus] = useState<{ kind: "info" | "success" | "error"; message: string } | null>(null);
 
@@ -86,18 +74,6 @@ export function SettingsPage() {
     setCurrency(profile.currency);
     profileHydrated.current = true;
   }, [profile, profileLoaded]);
-
-  useEffect(() => {
-    if (!preferencesLoaded || preferencesHydrated.current) return;
-    setDraftPreferences(preferences);
-    preferencesHydrated.current = true;
-  }, [preferences, preferencesLoaded]);
-
-  const updatePreference = <Key extends keyof AppPreferences>(key: Key, value: AppPreferences[Key]) => {
-    setDraftPreferences((current) => ({ ...current, [key]: value }));
-    setStatus(null);
-    setResetArmed(false);
-  };
 
   const saveSettings = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -109,9 +85,8 @@ export function SettingsPage() {
 
     try {
       saveActiveProfile({ ...profile, name: normalizedName, initials: initialsFor(normalizedName), currency });
-      saveAppPreferences(draftPreferences);
       setResetArmed(false);
-      setStatus({ kind: "success", message: "Saved in this browser. Your active model and preferences are updated on this device." });
+      setStatus({ kind: "success", message: "Saved in this browser. Your active model is updated for this account on this device." });
     } catch {
       setStatus({ kind: "error", message: "Settings could not be saved. Check browser storage access and try again." });
     }
@@ -120,31 +95,27 @@ export function SettingsPage() {
   const restoreDefaults = () => {
     if (!resetArmed) {
       setResetArmed(true);
-      setStatus({ kind: "info", message: "This removes the browser-saved profile and preferences. Select confirm to continue." });
+      setStatus({ kind: "info", message: "This removes the browser-saved profile for this account. Select confirm to continue." });
       return;
     }
 
     try {
       const profileResult = resetActiveProfile();
-      const preferencesResult = resetAppPreferences();
       setProfileName(profileResult.profile.name);
       setCurrency(profileResult.profile.currency);
-      setDraftPreferences(preferencesResult.preferences);
       setTheme("system");
       setResetArmed(false);
-      setStatus({ kind: "success", message: "Bundled defaults restored. Browser-saved profile and preference data were removed." });
+      setStatus({ kind: "success", message: "Bundled defaults restored. Browser-saved profile data for this account was removed." });
     } catch {
       setStatus({ kind: "error", message: "Defaults could not be restored. Check browser storage access and try again." });
     }
   };
 
-  const latestSavedAt = [profileSavedAt, preferencesSavedAt].filter(Boolean).sort().at(-1);
-
   return (
     <div className="mx-auto max-w-5xl">
       <AppPageHeader
         title="Settings"
-        description="Manage model identity, appearance, regional context, alerts, and this device's data boundary."
+        description="Manage model identity, appearance, and this device's data boundary."
       />
 
       <form onSubmit={saveSettings} className="grid gap-6">
@@ -187,18 +158,6 @@ export function SettingsPage() {
             <SettingRow icon={Palette} id="theme-setting" title="Theme" description="Follow the operating system or choose a persistent light or dark appearance.">
               <div className="w-full sm:w-48"><Label htmlFor="theme" className="sr-only">Theme</Label><Select id="theme" value={theme ?? "system"} onValueChange={setTheme}><SelectItem value="system">System</SelectItem><SelectItem value="light">Light</SelectItem><SelectItem value="dark">Dark</SelectItem></Select></div>
             </SettingRow>
-            <SettingRow icon={Globe2} id="language-setting" title="Interface language" description="Choose the saved language preference. English remains the available interface in this build.">
-              <div className="w-full sm:w-48"><Label htmlFor="language" className="sr-only">Interface language</Label><Select id="language" value={draftPreferences.language} onValueChange={(value) => updatePreference("language", value as AppPreferences["language"])}><SelectItem value="en">English</SelectItem><SelectItem value="ar">Arabic preference</SelectItem></Select></div>
-            </SettingRow>
-            <SettingRow icon={Bell} id="notifications" title="Decision alerts" description="Save whether the interface should surface debt, goal, and risk reminders when those signals are available.">
-              <Switch id="notifications" aria-labelledby="notifications-title" checked={draftPreferences.notifications} onCheckedChange={(checked) => updatePreference("notifications", checked)} />
-            </SettingRow>
-            <SettingRow icon={LockKeyhole} id="export-reauthentication" title="Export re-authentication" description="Save a preference to require a fresh account check before sensitive exports when server enforcement is available.">
-              <Switch id="export-reauthentication" aria-labelledby="export-reauthentication-title" checked={draftPreferences.exportReauthentication} onCheckedChange={(checked) => updatePreference("exportReauthentication", checked)} />
-            </SettingRow>
-            <SettingRow icon={Globe2} id="regional-mode" title="Saudi regional context" description="Use SAR-first formatting and Saudi context in model explanations. This does not change the calculation engine.">
-              <Switch id="regional-mode" aria-labelledby="regional-mode-title" checked={draftPreferences.regionalMode} onCheckedChange={(checked) => updatePreference("regionalMode", checked)} />
-            </SettingRow>
           </CardContent>
         </Card>
 
@@ -210,8 +169,8 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-4 text-sm leading-6 text-muted-foreground sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
-              <p>Your financial model and these preferences are stored in this browser. No bank connection, cloud profile sync, or background account import is represented.</p>
-              <p className="mt-2 text-xs">Active source: {source === "saved" ? "browser-saved profile" : "bundled sample profile"}. {latestSavedAt ? `Last saved ${new Date(latestSavedAt).toLocaleString()}.` : "No browser save yet."}</p>
+              <p>Your financial model is stored in this browser under the active account. No bank connection, cloud profile sync, or background account import is represented.</p>
+              <p className="mt-2 text-xs">Active source: {source === "saved" ? "account-scoped browser profile" : "bundled sample profile"}. {profileSavedAt ? `Last saved ${new Date(profileSavedAt).toLocaleString()}.` : "No browser save yet."}</p>
             </div>
             <Button type="button" variant={resetArmed ? "destructive" : "outline"} onClick={restoreDefaults}>
               <RotateCcw data-icon="inline-start" aria-hidden="true" />

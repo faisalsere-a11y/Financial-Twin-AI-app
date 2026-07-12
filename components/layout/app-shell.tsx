@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   Activity,
-  Bell,
   Gauge,
   Landmark,
   LayoutDashboard,
@@ -179,8 +178,8 @@ function Topbar() {
           </Link>
         </Button>
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/settings#notifications" aria-label="Notification preferences">
-            <Bell className="size-4" aria-hidden="true" />
+          <Link href="/settings" aria-label="Open settings">
+            <Settings className="size-4" aria-hidden="true" />
           </Link>
         </Button>
         <ThemeToggle />
@@ -226,11 +225,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="gradient-mesh min-h-screen">
       <a
         href="#main-content"
+        aria-hidden={mobileOpen || undefined}
+        inert={mobileOpen || undefined}
         className="app-print-hide fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-glow transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring"
       >
         Skip to main content
       </a>
-      <div className="app-print-hide fixed inset-y-0 left-0 z-40 hidden w-[280px] lg:block">
+      <div aria-hidden={mobileOpen || undefined} inert={mobileOpen || undefined} className="app-print-hide fixed inset-y-0 left-0 z-40 hidden w-[280px] lg:block">
         <Sidebar />
       </div>
       {mobileOpen && (
@@ -277,7 +278,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
-      <div className="lg:pl-[280px]">
+      <div aria-hidden={mobileOpen || undefined} inert={mobileOpen || undefined} className="lg:pl-[280px]">
         <div className="flex h-[78px] items-center border-b border-border bg-card/80 px-4 backdrop-blur-2xl lg:hidden">
           <Button
             ref={menuButtonRef}
@@ -303,6 +304,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
       <button
         type="button"
+        aria-hidden={mobileOpen || undefined}
+        inert={mobileOpen || undefined}
         onClick={() => openCommandPalette()}
         className="app-print-hide fixed bottom-4 right-4 hidden rounded-full border border-border bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-glass backdrop-blur transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:block"
       >

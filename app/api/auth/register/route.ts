@@ -20,6 +20,9 @@ export async function POST(request: Request) {
   if (!created.ok && created.reason === "exists") {
     return NextResponse.json({ error: "An account already exists for this email." }, { status: 409 });
   }
+  if (!created.ok && created.reason === "unavailable") {
+    return NextResponse.json({ error: "Account storage is unavailable. Try again later." }, { status: 503 });
+  }
 
   return NextResponse.json({ ok: true });
 }

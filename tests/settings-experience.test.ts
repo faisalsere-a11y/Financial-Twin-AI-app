@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 describe("settings experience", () => {
   const source = readFileSync("components/settings/settings-page.tsx", "utf8");
 
-  it("uses durable profile, preferences, and theme state", () => {
+  it("uses durable account-scoped profile and theme state", () => {
     expect(source).toContain("useFinancialProfile");
-    expect(source).toContain("useAppPreferences");
+    expect(source).not.toContain("useAppPreferences");
     expect(source).toContain('id="profile-name"');
     expect(source).toContain('htmlFor="profile-name"');
     expect(source).toContain('id="theme"');
@@ -15,12 +15,11 @@ describe("settings experience", () => {
     expect(source).toContain('value="dark"');
   });
 
-  it("provides stable accessible preference controls", () => {
-    expect(source).toContain('id="notifications"');
-    expect(source).toContain('aria-labelledby="notifications-title"');
-    expect(source).toContain("checked={draftPreferences.notifications}");
-    expect(source).toContain("checked={draftPreferences.exportReauthentication}");
-    expect(source).toContain("checked={draftPreferences.regionalMode}");
+  it("provides accessible feedback without inert preference controls", () => {
+    expect(source).not.toContain('id="notifications"');
+    expect(source).not.toContain("exportReauthentication");
+    expect(source).not.toContain("regionalMode");
+    expect(source).toContain('htmlFor="theme"');
     expect(source).toContain('aria-live="polite"');
     expect(source).toContain('role={status.kind === "error" ? "alert" : "status"}');
   });

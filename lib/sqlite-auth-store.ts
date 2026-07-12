@@ -87,15 +87,7 @@ export async function createAuthUser(input: { name: string; email: string; passw
   const db = await openDatabase();
 
   if (!db) {
-    fallbackUsers.set(normalized, {
-      id,
-      name: input.name,
-      email: normalized,
-      image: null,
-      passwordHash,
-      plainPassword: input.password
-    });
-    return { ok: true };
+    return { ok: false, reason: "unavailable" as const };
   }
 
   try {
@@ -103,6 +95,8 @@ export async function createAuthUser(input: { name: string; email: string; passw
       `INSERT INTO "User" ("id", "name", "email", "passwordHash", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?)`
     ).run(id, input.name, normalized, passwordHash, now, now);
     return { ok: true };
+  } catch {
+    return { ok: false, reason: "unavailable" as const };
   } finally {
     db.close();
   }

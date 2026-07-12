@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Area,
   AreaChart,
@@ -64,6 +64,8 @@ const scenarioIcons = {
 };
 
 function HealthRing({ score }: { score: number }) {
+  const reduceMotion = useReducedMotion();
+  const finalOffset = 157 - (score / 100) * 157;
   return (
     <div
       className="relative flex size-16 items-center justify-center"
@@ -81,9 +83,9 @@ function HealthRing({ score }: { score: number }) {
           strokeLinecap="round"
           fill="none"
           strokeDasharray={157}
-          initial={{ strokeDashoffset: 157 }}
-          animate={{ strokeDashoffset: 157 - (score / 100) * 157 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          initial={{ strokeDashoffset: reduceMotion ? finalOffset : 157 }}
+          animate={{ strokeDashoffset: finalOffset }}
+          transition={{ duration: reduceMotion ? 0 : 0.8, ease: "easeOut" }}
         />
       </svg>
       <span className="absolute text-xs font-black" aria-hidden="true">{score}</span>
@@ -152,6 +154,7 @@ function ScenarioTile({
   currency: FinancialProfile["currency"];
   onSelect: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
   const Icon = scenarioIcons[scenario.type];
   const delta = scenario.monthlyIncomeDelta - scenario.monthlyExpenseDelta - scenario.monthlyDebtPaymentDelta;
   const tone = scenario.tags.some((tag) => tag.toLowerCase().includes("high")) ? "danger" : selected ? "success" : "blue";
@@ -159,8 +162,8 @@ function ScenarioTile({
   return (
     <motion.button
       type="button"
-      layout
-      whileHover={{ y: -4 }}
+      layout={!reduceMotion}
+      whileHover={reduceMotion ? undefined : { y: -4 }}
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
