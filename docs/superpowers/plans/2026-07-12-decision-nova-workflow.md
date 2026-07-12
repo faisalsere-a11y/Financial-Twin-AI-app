@@ -22,9 +22,17 @@
 
 ## Task 3: Accessible decision lab
 
-- [ ] Add a failing source contract for scenario deep links, scenario library selection, labeled fields/errors, loading/error/retry states, structured NOVA sections, and accessible chart summary.
-- [ ] Rebuild the screen with library and custom-builder modes, initializing from `?scenario=` in the browser.
-- [ ] Use the active profile and NOVA adapter in both server and static modes.
-- [ ] Remove fake favorite behavior and toast-only outcomes; provide inline status and retry.
-- [ ] Use semantic chart tokens and a text/table equivalent for current versus after results.
-- [ ] Run full server and static production verification; commit evidence.
+- [x] Add a failing source contract for scenario deep links, scenario library selection, labeled fields/errors, loading/error/retry states, structured NOVA sections, and accessible chart summary.
+- [x] Rebuild the screen with library and custom-builder modes, initializing from `?scenario=` in the browser.
+- [x] Use the active profile and NOVA adapter in both server and static modes.
+- [x] Remove fake favorite behavior and toast-only outcomes; provide inline status and retry.
+- [x] Use semantic chart tokens and a text/table equivalent for current versus after results.
+- [x] Run full server and static production verification; commit evidence.
+
+Verification evidence captured on 2026-07-12:
+
+- Vitest passed 55/55 tests across 19 files; ESLint and `tsc --noEmit` completed without findings.
+- The server build generated 18/18 pages with `/simulations` at 272 kB first-load JavaScript, down from 277 kB before the rebuild.
+- The GitHub Pages build generated 14/14 pages and exported the structured deterministic fallback, custom builder, scenario library, active-profile calculation path, and inline outcome states.
+- Landing remains 124 kB first-load JavaScript and authenticated route coverage is unchanged.
+- Both financial engines remain unchanged from the branch merge base with `main`.
