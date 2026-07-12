@@ -23,7 +23,7 @@
 ### Task 1: Semantic theme and reduced-motion contract
 
 **Files:**
-- Create: `tests/ui-foundation.test.ts`
+- Create: `tests/ui-foundation.test.tsx`
 - Modify: `app/globals.css`
 - Modify: `tailwind.config.ts`
 
@@ -31,7 +31,7 @@
 - Consumes: Tailwind's existing CSS-variable color pattern.
 - Produces: `--canvas`, `--surface`, `--surface-raised`, `--surface-glass`, `--text-primary`, `--text-secondary`, `--brand`, `--positive`, `--caution`, `--danger`, and `--chart-*` variables plus Tailwind utilities with the same semantic names.
 
-- [ ] **Step 1: Write the failing token-contract test**
+- [x] **Step 1: Write the failing token-contract test**
 
 ```ts
 import { readFileSync } from "node:fs";
@@ -71,18 +71,18 @@ describe("UI foundation", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run:
 
 ```powershell
 $env:PATH='C:\Users\alase\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin;' + $env:PATH
-.\node_modules\.bin\vitest.cmd run tests\ui-foundation.test.ts
+.\node_modules\.bin\vitest.cmd run tests\ui-foundation.test.tsx
 ```
 
 Expected: FAIL because semantic variables and the reduced-motion media query do not exist.
 
-- [ ] **Step 3: Replace the palette and atmosphere with semantic variables**
+- [x] **Step 3: Replace the palette and atmosphere with semantic variables**
 
 Define a warm light `:root` and mineral dark `.dark` palette. Keep the existing shadcn-compatible variables as aliases so current components continue to compile:
 
@@ -186,23 +186,23 @@ chart: {
 }
 ```
 
-- [ ] **Step 4: Run the focused test and full suite**
+- [x] **Step 4: Run the focused test and full suite**
 
 Run the focused command from Step 2, then `.\node_modules\.bin\vitest.cmd run`.
 
 Expected: 3 test files and 6 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
-git add tests/ui-foundation.test.ts app/globals.css tailwind.config.ts
+git add tests/ui-foundation.test.tsx app/globals.css tailwind.config.ts
 git commit -m "feat: establish semantic theme foundation"
 ```
 
 ### Task 2: Theme-aware providers and semantic UI primitives
 
 **Files:**
-- Modify: `tests/ui-foundation.test.ts`
+- Modify: `tests/ui-foundation.test.tsx`
 - Create: `components/ui/themed-toaster.tsx`
 - Modify: `app/providers.tsx`
 - Modify: `components/ui/button.tsx`
@@ -281,7 +281,7 @@ Expected: all token and primitive assertions pass; existing engine tests remain 
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add tests/ui-foundation.test.ts app/providers.tsx components/ui
+git add tests/ui-foundation.test.tsx app/providers.tsx components/ui
 git commit -m "feat: make UI primitives theme aware"
 ```
 

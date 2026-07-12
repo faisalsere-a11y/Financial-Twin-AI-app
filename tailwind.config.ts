@@ -18,6 +18,20 @@ const config: Config = {
     },
     extend: {
       colors: {
+        canvas: "hsl(var(--canvas))",
+        surface: "hsl(var(--surface))",
+        "surface-raised": "hsl(var(--surface-raised))",
+        "text-primary": "hsl(var(--text-primary))",
+        "text-secondary": "hsl(var(--text-secondary))",
+        brand: "hsl(var(--brand))",
+        positive: "hsl(var(--positive))",
+        caution: "hsl(var(--caution))",
+        danger: "hsl(var(--danger))",
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))"
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
