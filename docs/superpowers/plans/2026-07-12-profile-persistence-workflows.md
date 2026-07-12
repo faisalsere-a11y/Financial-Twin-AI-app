@@ -24,11 +24,11 @@
 - Create: `lib/profile/browser-store.ts`
 - Create: `tests/profile-browser-store.test.ts`
 
-- [ ] Write failing tests for versioned save/read, malformed data fallback, reset, and preference defaults.
-- [ ] Validate stored profile and preference envelopes with Zod.
-- [ ] Keep the storage interface injectable so tests do not require a browser.
-- [ ] Emit no network or synchronization claims; persist only inside the active browser storage boundary.
-- [ ] Run focused and full tests; commit.
+- [x] Write failing tests for versioned save/read, malformed data fallback, reset, and preference defaults.
+- [x] Validate stored profile and preference envelopes with Zod.
+- [x] Keep the storage interface injectable so tests do not require a browser.
+- [x] Emit no network or synchronization claims; persist only inside the active browser storage boundary.
+- [x] Run focused and full tests; commit.
 
 ## Task 3: Active-profile hook and onboarding experience
 
