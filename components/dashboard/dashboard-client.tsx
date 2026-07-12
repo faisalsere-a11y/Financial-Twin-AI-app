@@ -34,11 +34,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { ChartFrame } from "@/components/data/chart-frame";
+import { MetricCard } from "@/components/data/metric-card";
 import { AppPageHeader, MiniMetric, NovaOrb } from "@/components/layout/app-shell";
-import { calculateFinancialTwin, compareScenario, forecastGoalCompletion } from "@/lib/financial/engine";
+import { compareScenario, forecastGoalCompletion } from "@/lib/financial/engine";
 import { activityFeed, sampleProfile, scenarioLibrary } from "@/lib/financial/sample-data";
 import type { ScenarioInput } from "@/lib/financial/types";
-import { cn, formatCurrency, formatPercent } from "@/lib/utils";
+import { buildFinancialOverview, type FinancialOverviewViewModel } from "@/lib/presentation/financial-overview";
+import { chartTheme, chartTooltipStyle } from "@/lib/presentation/chart-theme";
+import { cn, formatCurrency } from "@/lib/utils";
 
 const scenarioIcons = {
   car: Car,
@@ -58,12 +62,12 @@ function HealthRing({ score }: { score: number }) {
   return (
     <div className="relative flex size-16 items-center justify-center">
       <svg className="size-16 -rotate-90">
-        <circle cx="32" cy="32" r="25" stroke="rgba(255,255,255,.08)" strokeWidth="5" fill="none" />
+        <circle cx="32" cy="32" r="25" stroke={chartTheme.grid} strokeWidth="5" fill="none" />
         <motion.circle
           cx="32"
           cy="32"
           r="25"
-          stroke="#3b82f6"
+          stroke={chartTheme.current}
           strokeWidth="5"
           strokeLinecap="round"
           fill="none"
@@ -78,78 +82,41 @@ function HealthRing({ score }: { score: number }) {
   );
 }
 
-function MetricCard({
-  title,
-  value,
-  sub,
-  accent = "green",
-  children
-}: {
-  title: string;
-  value: string;
-  sub?: string;
-  accent?: "green" | "blue" | "amber" | "rose";
-  children?: React.ReactNode;
-}) {
-  const accentClass = {
-    green: "from-emerald-400/[0.55] to-emerald-400/0",
-    blue: "from-blue-400/[0.55] to-blue-400/0",
-    amber: "from-amber-400/[0.55] to-amber-400/0",
-    rose: "from-rose-400/[0.55] to-rose-400/0"
-  }[accent];
+function IdentityHeader({ overview }: { overview: FinancialOverviewViewModel }) {
 
   return (
-    <Card className="relative min-h-32 overflow-hidden">
-      <div className={cn("absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t opacity-35", accentClass)} />
-      <CardHeader className="pb-3">
-        <CardTitle className="text-muted-foreground">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="relative">
-        <div className="text-2xl font-black tracking-tight">{value}</div>
-        {sub && <div className="mt-1 text-xs font-semibold text-muted-foreground">{sub}</div>}
-        {children && <div className="mt-4">{children}</div>}
-      </CardContent>
-    </Card>
-  );
-}
-
-function IdentityHeader({ selected }: { selected: ScenarioInput }) {
-  const twin = calculateFinancialTwin(sampleProfile);
-  const comparison = compareScenario(sampleProfile, selected);
-
-  return (
-    <Card id="twin" className="glass-panel-strong border-blue-400/25 bg-gradient-to-br from-blue-500/10 via-white/[0.035] to-violet-500/10">
+    <Card id="twin" className="glass-panel-strong border-primary/25 bg-gradient-to-br from-primary/10 via-card to-chart-3/10">
       <div className="scanline pointer-events-none absolute inset-0 opacity-15" />
       <CardContent className="relative grid gap-5 p-5 xl:grid-cols-[1.1fr_auto_1.7fr] xl:items-center">
         <div className="flex items-center gap-5">
-          <div className="relative flex size-20 items-center justify-center rounded-3xl border border-blue-400/20 bg-white/[0.04] shadow-glow">
+          <div className="relative flex size-20 items-center justify-center rounded-3xl border border-primary/20 bg-card shadow-glow">
             <NovaOrb className="size-12" />
-            <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-[#05080f] bg-emerald-400 text-[9px] font-black text-emerald-950">
+            <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-card bg-positive text-[9px] font-black text-primary-foreground">
               AI
             </span>
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-300">Digital twin active</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight">Ahmed Al-Harbi</h2>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">Financial model ready</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight">{overview.profile.name}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge variant="success">Twin Active</Badge>
-              <Badge variant="blue">NOVA synced</Badge>
-              <span className="text-xs text-muted-foreground">Last synced 2 min ago</span>
+              <Badge variant="success">Calculated locally</Badge>
+              <Badge variant="blue">Sample profile</Badge>
+              <span className="text-xs text-muted-foreground">No bank connection</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3 border-border xl:border-l xl:border-r xl:px-6">
-          <HealthRing score={twin.financialHealth.score} />
+          <HealthRing score={overview.health.score} />
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Health Score</p>
-            <p className="font-bold text-emerald-300">{twin.financialHealth.band}</p>
+            <p className="font-bold text-positive">{overview.health.band}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <MiniMetric label="Net Worth" value={formatCurrency(twin.netWorth)} />
-          <MiniMetric label="Monthly Surplus" value={formatCurrency(twin.monthlySurplus)} />
-          <MiniMetric label="Debt Ratio" value={formatPercent(comparison.after.debtRatio)} />
-          <MiniMetric label="Savings Rate" value={formatPercent(twin.savingsRate)} />
+          <MiniMetric label="Monthly income" value={formatCurrency(overview.flow.monthlyIncome)} />
+          <MiniMetric label="Monthly expenses" value={formatCurrency(overview.flow.monthlyExpenses)} />
+          <MiniMetric label="Obligations" value={`${formatCurrency(overview.flow.monthlyDebtPayment)}/mo`} />
+          <MiniMetric label="Savings balance" value={formatCurrency(overview.flow.savingsBalance)} />
         </div>
       </CardContent>
     </Card>
@@ -207,51 +174,43 @@ function ScenarioTile({
   );
 }
 
-function CashFlowChart({ selected }: { selected: ScenarioInput }) {
-  const comparison = useMemo(() => compareScenario(sampleProfile, selected), [selected]);
-  const data = comparison.current.timeline.map((point, index) => ({
-    month: point.month,
-    current: Math.round(point.cashFlow + index * 110),
-    after: Math.round((comparison.after.timeline[index]?.cashFlow ?? point.cashFlow) + index * 260)
-  }));
-
+function CashFlowChart({ overview }: { overview: FinancialOverviewViewModel }) {
   return (
-    <Card className="min-h-72">
-      <CardHeader className="flex-row items-start justify-between">
-        <div>
-          <CardTitle>Future Cash Flow Timeline</CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">Current path vs after decision</p>
-        </div>
+    <ChartFrame
+      title="Future cash flow"
+      description={`Current path compared with ${overview.decision.name}`}
+      summary={overview.cashFlowSummary}
+      className="min-h-72"
+      action={
         <div className="flex gap-3 text-xs">
-          <span className="flex items-center gap-2 text-blue-300"><span className="h-0.5 w-3 bg-blue-400" />Current</span>
-          <span className="flex items-center gap-2 text-emerald-300"><span className="h-0.5 w-3 bg-emerald-400" />After</span>
+          <span className="flex items-center gap-2 text-primary"><span className="h-0.5 w-3 bg-chart-1" />Current</span>
+          <span className="flex items-center gap-2 text-positive"><span className="h-0.5 w-3 bg-chart-2" />After</span>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient id="after" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="current" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.26} />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="rgba(255,255,255,.06)" vertical={false} />
-              <XAxis dataKey="month" stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
-              <YAxis stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ background: "#0d1423", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10 }} />
-              <Area type="monotone" dataKey="current" stroke="#3b82f6" strokeWidth={2} fill="url(#current)" />
-              <Area type="monotone" dataKey="after" stroke="#10b981" strokeWidth={2.5} strokeDasharray="6 5" fill="url(#after)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
+      }
+    >
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={overview.cashFlow}>
+            <defs>
+              <linearGradient id="dashboard-after" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={chartTheme.after} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={chartTheme.after} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="dashboard-current" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={chartTheme.current} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={chartTheme.current} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke={chartTheme.grid} vertical={false} />
+            <XAxis dataKey="month" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
+            <YAxis stroke={chartTheme.axis} tickLine={false} axisLine={false} />
+            <Tooltip contentStyle={chartTooltipStyle} />
+            <Area type="monotone" dataKey="current" stroke={chartTheme.current} strokeWidth={2} fill="url(#dashboard-current)" />
+            <Area type="monotone" dataKey="after" stroke={chartTheme.after} strokeWidth={2.5} strokeDasharray="6 5" fill="url(#dashboard-after)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </ChartFrame>
   );
 }
 
@@ -329,10 +288,10 @@ function ProjectionBars({ selected }: { selected: ScenarioInput }) {
 function TwinSummary({ selected }: { selected: ScenarioInput }) {
   const comparison = useMemo(() => compareScenario(sampleProfile, selected), [selected]);
   const data = [
-    { name: "Cash", value: comparison.after.profile.assets.cash, color: "#10b981" },
-    { name: "Invested", value: comparison.after.profile.assets.investments + comparison.after.profile.assets.retirement, color: "#3b82f6" },
-    { name: "Real estate", value: comparison.after.profile.assets.realEstate, color: "#8b5cf6" },
-    { name: "Debt", value: comparison.after.monthlyDebtPayment * 24, color: "#f6b50e" }
+    { name: "Cash", value: comparison.after.profile.assets.cash, color: chartTheme.after },
+    { name: "Invested", value: comparison.after.profile.assets.investments + comparison.after.profile.assets.retirement, color: chartTheme.current },
+    { name: "Real estate", value: comparison.after.profile.assets.realEstate, color: chartTheme.comparison },
+    { name: "Debt", value: comparison.after.monthlyDebtPayment * 24, color: "hsl(var(--caution))" }
   ];
 
   return (
@@ -352,7 +311,7 @@ function TwinSummary({ selected }: { selected: ScenarioInput }) {
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: "#0d1423", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10 }} />
+              <Tooltip contentStyle={chartTooltipStyle} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -409,13 +368,12 @@ function RecentSimulations() {
 
 export function DashboardClient() {
   const [selected, setSelected] = useState(scenarioLibrary[1] ?? scenarioLibrary[0]);
-  const twin = calculateFinancialTwin(sampleProfile);
-  const comparison = compareScenario(sampleProfile, selected);
+  const overview = useMemo(() => buildFinancialOverview(sampleProfile, selected), [selected]);
   const barData = [
-    { label: "Income", value: twin.monthlyIncome },
-    { label: "Expenses", value: twin.monthlyExpenses },
-    { label: "Obligations", value: twin.monthlyDebtPayment },
-    { label: "Surplus", value: twin.monthlySurplus }
+    { label: "Income", value: overview.flow.monthlyIncome },
+    { label: "Expenses", value: overview.flow.monthlyExpenses },
+    { label: "Obligations", value: overview.flow.monthlyDebtPayment },
+    { label: "Surplus", value: overview.metrics.find((metric) => metric.id === "monthly-surplus")?.rawValue ?? 0 }
   ];
 
   return (
@@ -436,21 +394,11 @@ export function DashboardClient() {
           </Button>
         }
       />
-      <IdentityHeader selected={selected} />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard title="Monthly Income" value={formatCurrency(twin.monthlyIncome)} accent="green" />
-        <MetricCard title="Monthly Expenses" value={formatCurrency(twin.monthlyExpenses)} accent="amber">
-          <div className="flex gap-1">
-            <span className="h-1.5 flex-1 rounded bg-amber-400" />
-            <span className="h-1.5 flex-[0.7] rounded bg-amber-500/60" />
-            <span className="h-1.5 flex-[0.55] rounded bg-amber-600/40" />
-          </div>
-        </MetricCard>
-        <MetricCard title="Savings Balance" value={formatCurrency(sampleProfile.assets.cash)} accent="blue" />
-        <MetricCard title="Obligations" value={`${formatCurrency(twin.monthlyDebtPayment)}/mo`} accent="rose">
-          <Badge variant="blue">2 scheduled next week</Badge>
-        </MetricCard>
-        <MetricCard title="Risk Profile" value={comparison.after.risk.level} sub={comparison.after.risk.explanation} accent="amber" />
+      <IdentityHeader overview={overview} />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {overview.metrics.map((metric) => (
+          <MetricCard key={metric.id} metric={metric} />
+        ))}
       </div>
       <div className="grid gap-6 xl:grid-cols-[1.05fr_1fr]">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -464,7 +412,7 @@ export function DashboardClient() {
           ))}
         </div>
         <div className="grid gap-6">
-          <CashFlowChart selected={selected} />
+          <CashFlowChart overview={overview} />
           <RecommendationPanel selected={selected} />
         </div>
       </div>
@@ -481,11 +429,11 @@ export function DashboardClient() {
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={barData}>
-              <CartesianGrid stroke="rgba(255,255,255,.06)" vertical={false} />
-              <XAxis dataKey="label" stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
-              <YAxis stroke="rgba(255,255,255,.35)" tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ background: "#0d1423", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10 }} />
-              <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              <CartesianGrid stroke={chartTheme.grid} vertical={false} />
+              <XAxis dataKey="label" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
+              <YAxis stroke={chartTheme.axis} tickLine={false} axisLine={false} />
+              <Tooltip contentStyle={chartTooltipStyle} />
+              <Bar dataKey="value" fill={chartTheme.current} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
