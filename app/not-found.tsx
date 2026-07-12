@@ -10,7 +10,7 @@ export default function NotFound() {
           <CardTitle className="normal-case tracking-normal">Page not found</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground">This route is not part of the Financial Twin AI demo.</p>
+          <p className="text-sm text-muted-foreground">The page you requested does not exist or has moved.</p>
           <Button asChild>
             <Link href="/dashboard">Go to dashboard</Link>
           </Button>

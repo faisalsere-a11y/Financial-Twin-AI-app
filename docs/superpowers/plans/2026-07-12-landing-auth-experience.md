@@ -294,7 +294,7 @@ git commit -m "feat: rebuild accessible authentication journey"
 - Modify: `app/not-found.tsx`
 - Modify: `docs/superpowers/plans/2026-07-12-landing-auth-experience.md`
 
-- [ ] **Step 1: Remove remaining public demo framing**
+- [x] **Step 1: Remove remaining public demo framing**
 
 Change the not-found copy to “The page you requested does not exist or has moved,” keep the dashboard return action, and verify `rg -n "demo|Demo|beta customer|SAR/mo|prepared for demo|queued for demo" components/landing components/auth app/page.tsx app/layout.tsx app/not-found.tsx` returns no misleading public-journey claims.
 
@@ -304,19 +304,27 @@ Change the not-found copy to “The page you requested does not exist or has mov
 </p>
 ```
 
-- [ ] **Step 2: Run the complete automated gate**
+- [x] **Step 2: Run the complete automated gate**
 
 Run Vitest, ESLint, TypeScript, and Next build. Record test count, route count, and landing first-load JS.
 
-- [ ] **Step 3: Verify scope and preservation**
+- [x] **Step 3: Verify scope and preservation**
 
 Confirm domain-engine diffs are empty, route files still exist, static export still has `/dashboard` sample access, and Git status contains only this slice before the final commit.
 
-- [ ] **Step 4: Update checkboxes and commit evidence**
+- [x] **Step 4: Update checkboxes and commit evidence**
 
 ```powershell
 git add app/not-found.tsx docs/superpowers/plans/2026-07-12-landing-auth-experience.md
 git commit -m "docs: record public journey verification"
 ```
+
+Verification evidence captured on 2026-07-12:
+
+- Vitest passed 32/32 tests across 11 files; ESLint and `tsc --noEmit` completed without findings.
+- The server-capable production build compiled, generated 18/18 static pages, preserved every application and API route, and kept `/` at 130 kB first-load JavaScript.
+- The GitHub Pages configuration compiled and generated 14/14 static pages; exported login, dashboard, signup, and onboarding artifacts exist, and the login export contains the explicit sample-access action.
+- Public-journey copy search returned no misleading demo, beta-customer, or pricing claims.
+- `lib/financial/engine.ts` and `lib/financial/investments.ts` have no diff from the branch merge base with `main`.
 
 Browser-based desktop/mobile, theme, keyboard, reduced-motion, and Lighthouse verification remains mandatory in the final product audit when the in-app browser surface is available.
