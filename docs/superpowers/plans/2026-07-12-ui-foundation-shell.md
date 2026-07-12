@@ -452,11 +452,11 @@ git commit -m "feat: refine responsive product shell"
 - Consumes: Tasks 1-4 deliverables.
 - Produces: verified milestone evidence and an updated plan with all completed boxes checked.
 
-- [ ] **Step 1: Run the automated gate**
+- [x] **Step 1: Run the automated gate**
 
 Run the full Vitest suite, ESLint, `tsc --noEmit`, and the production build. Expected: every command exits 0 with no warnings attributable to application code.
 
-- [ ] **Step 2: Run static regression searches**
+- [x] **Step 2: Run static regression searches**
 
 ```powershell
 rg -n "border-white|bg-white/|#05080f|#0d1423|color-scheme: dark" components/ui components/layout app/providers.tsx app/globals.css
@@ -465,11 +465,11 @@ rg -n "TODO|TBD|placeholder|queued for demo|prepared for demo" app components li
 
 Expected: the first command returns only intentionally documented decorative exceptions outside semantic surfaces; the second returns no new foundation regressions.
 
-- [ ] **Step 3: Inspect Git scope**
+- [x] **Step 3: Inspect Git scope**
 
 Run `git status --short` and `git diff --stat HEAD~4..HEAD`. Expected: only the foundation files and plan are changed by this milestone.
 
-- [ ] **Step 4: Update the plan checkboxes and commit verification evidence**
+- [x] **Step 4: Update the plan checkboxes and commit verification evidence**
 
 ```powershell
 git add docs/superpowers/plans/2026-07-12-ui-foundation-shell.md

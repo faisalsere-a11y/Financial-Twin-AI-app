@@ -52,4 +52,14 @@ describe("UI foundation", () => {
     expect(html).toContain("bg-primary");
     expect(html).not.toContain("border-white");
   });
+
+  it("keeps badge and progress surfaces theme semantic", () => {
+    const badge = readFileSync("components/ui/badge.tsx", "utf8");
+    const progress = readFileSync("components/ui/progress.tsx", "utf8");
+
+    expect(badge).toContain("border-border");
+    expect(badge).not.toContain("border-white");
+    expect(progress).toContain("bg-muted");
+    expect(progress).not.toContain("bg-white");
+  });
 });
