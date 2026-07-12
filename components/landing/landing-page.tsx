@@ -12,7 +12,8 @@ import {
   Wand2
 } from "lucide-react";
 import { DecisionPreview } from "@/components/landing/decision-preview";
-import { LandingNav, NovaOrb } from "@/components/layout/app-shell";
+import { NovaOrb } from "@/components/brand/nova-orb";
+import { LandingNav } from "@/components/landing/landing-nav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

@@ -26,8 +26,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { NovaOrb } from "@/components/brand/nova-orb";
 import { openCommandPalette } from "@/lib/ui/commands";
 import { navItems, type NavigationIcon } from "@/lib/ui/navigation";
+import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import { cn } from "@/lib/utils";
 
 const navigationIcons: Record<NavigationIcon, LucideIcon> = {
@@ -39,15 +41,6 @@ const navigationIcons: Record<NavigationIcon, LucideIcon> = {
   target: Target,
   user: UserRound
 };
-
-export function NovaOrb({ className }: { className?: string }) {
-  return (
-    <span aria-hidden="true" className={cn("relative flex items-center justify-center rounded-full", className)}>
-      <span className="absolute inset-0 rounded-full bg-primary/20 blur-xl" />
-      <span className="nova-orb relative block size-full rounded-full" />
-    </span>
-  );
-}
 
 function Brand({ href = "/dashboard" }: { href?: string }) {
   return (
@@ -71,6 +64,7 @@ function Sidebar({
   firstLinkRef?: (element: HTMLAnchorElement | null) => void;
 }) {
   const pathname = usePathname();
+  const { profile, source } = useFinancialProfile();
 
   return (
     <aside className="flex h-full flex-col border-r border-border bg-card/95 backdrop-blur-2xl">
@@ -80,12 +74,12 @@ function Sidebar({
       <div className="px-4 pt-5">
         <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <Badge variant="blue">Sample twin</Badge>
-            <span className="text-[10px] font-bold text-primary">98.7% complete</span>
+            <Badge variant={source === "saved" ? "success" : "blue"}>{source === "saved" ? "Saved twin" : "Sample twin"}</Badge>
+            <span className="text-[10px] font-bold text-primary">{profile.currency}</span>
           </div>
-          <p className="text-sm font-black text-foreground">Ahmed Al-Harbi</p>
+          <p className="text-sm font-black text-foreground">{profile.name}</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Local sample profile · SAR · Updated from the financial model
+            {source === "saved" ? "Saved in this browser" : "Bundled sample profile"} · {profile.country}
           </p>
         </div>
       </div>
@@ -129,9 +123,9 @@ function Sidebar({
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
           <span className="flex items-center gap-2">
             <span className="h-0.5 w-4 rounded bg-positive" />
-            Saudi Arabia
+            {profile.country}
           </span>
-          <span>Private preview</span>
+          <span>Browser model</span>
         </div>
       </div>
     </aside>
@@ -155,6 +149,8 @@ function ThemeToggle() {
 }
 
 function Topbar() {
+  const { profile, source } = useFinancialProfile();
+
   return (
     <header className="sticky top-0 z-30 flex h-[78px] items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-2xl lg:px-8">
       <div className="hidden items-center gap-3 lg:flex">
@@ -162,7 +158,7 @@ function Topbar() {
           <NovaOrb className="size-7" />
           <div>
             <p className="text-xs font-black text-foreground">NOVA ready</p>
-            <p className="text-[11px] text-muted-foreground">Using the local financial model</p>
+            <p className="text-[11px] text-muted-foreground">Using the {source === "saved" ? "saved" : "sample"} financial model</p>
           </div>
         </div>
         <Badge variant="success">
@@ -189,7 +185,7 @@ function Topbar() {
         </Button>
         <ThemeToggle />
         <Avatar className="border border-border bg-muted">
-          <AvatarFallback className="bg-transparent text-xs font-black">AH</AvatarFallback>
+          <AvatarFallback className="bg-transparent text-xs font-black">{profile.initials}</AvatarFallback>
         </Avatar>
       </div>
     </header>
@@ -307,31 +303,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <span className="font-semibold text-foreground">Ctrl K</span> command
       </button>
     </div>
-  );
-}
-
-export function LandingNav() {
-  return (
-    <header className="fixed left-0 right-0 top-0 z-40 border-b border-border bg-card/75 backdrop-blur-2xl">
-      <div className="container flex h-16 items-center justify-between">
-        <Brand href="/" />
-        <nav aria-label="Landing page" className="hidden items-center gap-6 text-sm font-semibold text-muted-foreground md:flex">
-          <Link href="#how-it-works" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">How it works</Link>
-          <Link href="#nova" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">NOVA</Link>
-          <Link href="#trust" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Trust</Link>
-          <Link href="#faq" className="rounded-lg hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">FAQ</Link>
-        </nav>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <ThemeToggle />
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/signup">Start free</Link>
-          </Button>
-        </div>
-      </div>
-    </header>
   );
 }
 

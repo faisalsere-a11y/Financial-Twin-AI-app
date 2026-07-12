@@ -1,6 +1,6 @@
 "use client";
 
-import { FileDown, FileSpreadsheet, Printer } from "lucide-react";
+import { FileSpreadsheet, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AppPageHeader } from "@/components/layout/app-shell";
@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { calculateFinancialTwin, compareScenario } from "@/lib/financial/engine";
-import { sampleProfile, sampleScenario } from "@/lib/financial/sample-data";
+import { sampleScenario } from "@/lib/financial/sample-data";
+import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import { twinToCsv } from "@/lib/reports/export";
 import { formatCurrency } from "@/lib/utils";
 
-const isGitHubPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "true";
-
 export function ReportsPage() {
-  const twin = calculateFinancialTwin(sampleProfile);
+  const { profile } = useFinancialProfile();
+  const twin = calculateFinancialTwin(profile);
   const yearly = twin.timeline.map((point) => ({
     month: point.month,
     netWorth: Math.round(point.netWorth),
@@ -23,20 +23,14 @@ export function ReportsPage() {
   }));
 
   const exportCsv = () => {
-    if (isGitHubPages) {
-      const csv = twinToCsv(twin, compareScenario(sampleProfile, sampleScenario));
-      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "financial-twin-report.csv";
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.success("CSV export downloaded.");
-      return;
-    }
-
-    window.location.href = "/api/reports/export";
-    toast.success("CSV export started.");
+    const csv = twinToCsv(twin, compareScenario(profile, sampleScenario));
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "financial-twin-report.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV export downloaded from the active profile.");
   };
 
   return (
@@ -46,9 +40,9 @@ export function ReportsPage() {
         description="Monthly, quarterly, and annual reports with export flows for PDF and CSV."
         action={
           <div className="flex gap-2">
-            <Button variant="glass" onClick={() => toast.success("PDF export queued for demo.")}>
-              <FileDown data-icon="inline-start" />
-              Export PDF
+            <Button variant="glass" onClick={() => window.print()}>
+              <Printer data-icon="inline-start" />
+              Print / save PDF
             </Button>
             <Button onClick={exportCsv}>
               <FileSpreadsheet data-icon="inline-start" />
@@ -108,10 +102,10 @@ export function ReportsPage() {
               {twin.timeline.slice(0, 6).map((point) => (
                 <TableRow key={point.month}>
                   <TableCell className="font-semibold">{point.month}</TableCell>
-                  <TableCell>{formatCurrency(point.income)}</TableCell>
-                  <TableCell>{formatCurrency(point.expenses)}</TableCell>
-                  <TableCell>{formatCurrency(point.cashFlow)}</TableCell>
-                  <TableCell>{formatCurrency(point.netWorth)}</TableCell>
+                  <TableCell>{formatCurrency(point.income, profile.currency)}</TableCell>
+                  <TableCell>{formatCurrency(point.expenses, profile.currency)}</TableCell>
+                  <TableCell>{formatCurrency(point.cashFlow, profile.currency)}</TableCell>
+                  <TableCell>{formatCurrency(point.netWorth, profile.currency)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

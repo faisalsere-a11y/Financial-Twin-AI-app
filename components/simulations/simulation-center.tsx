@@ -8,7 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Heart, RotateCcw, Wand2 } from "lucide-react";
 import { toast } from "sonner";
-import { AppPageHeader, NovaOrb } from "@/components/layout/app-shell";
+import { NovaOrb } from "@/components/brand/nova-orb";
+import { AppPageHeader } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { compareScenario } from "@/lib/financial/engine";
-import { sampleProfile, sampleScenario } from "@/lib/financial/sample-data";
+import { sampleScenario } from "@/lib/financial/sample-data";
+import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import type { ScenarioComparison } from "@/lib/financial/types";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 
@@ -59,6 +61,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export function SimulationCenter() {
+  const { profile } = useFinancialProfile();
   const [result, setResult] = useState<SimulationResponse | null>(null);
   const form = useForm<SimulationForm>({ resolver: zodResolver(formSchema), defaultValues: defaults });
   const values = form.watch();
@@ -87,15 +90,15 @@ export function SimulationCenter() {
       };
 
       if (isGitHubPages) {
-        const comparison = compareScenario(sampleProfile, scenario);
+        const comparison = compareScenario(profile, scenario);
         return {
           comparison,
           advice: [
-            `${scenario.name} changes your monthly surplus by ${formatCurrency(comparison.delta.monthlySurplus)}.`,
+            `${scenario.name} changes your monthly surplus by ${formatCurrency(comparison.delta.monthlySurplus, profile.currency)}.`,
             `Debt ratio moves to ${formatPercent(comparison.after.debtRatio, 1)} after this decision.`,
             comparison.after.emergencyFundMonths < 4
               ? "Emergency fund is tight after this move. Rebuild liquidity before adding obligations."
-              : "Emergency fund remains resilient in this demo scenario.",
+              : "Emergency fund remains resilient in this scenario.",
             "Try changing the down payment or loan years to compare risk against liquidity."
           ]
         } satisfies SimulationResponse;
@@ -104,14 +107,14 @@ export function SimulationCenter() {
       const response = await fetch("/api/simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scenario)
+        body: JSON.stringify({ scenario, profile })
       });
       if (!response.ok) throw new Error("Simulation failed");
       return (await response.json()) as SimulationResponse;
     },
     onSuccess: (data) => {
       setResult(data);
-      toast.success("Simulation complete. Your twin has been updated.");
+      toast.success("Simulation complete for the active profile.");
     },
     onError: () => toast.error("Simulation could not run.")
   });
@@ -155,7 +158,7 @@ export function SimulationCenter() {
               </div>
               <div className="rounded-2xl border border-blue-400/20 bg-blue-400/10 p-4">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-300">Estimated monthly debt payment</p>
-                <p className="mt-1 text-2xl font-black">{formatCurrency(monthlyPayment)}</p>
+                <p className="mt-1 text-2xl font-black">{formatCurrency(monthlyPayment, profile.currency)}</p>
               </div>
               <Button disabled={mutation.isPending}>
                 <Wand2 data-icon="inline-start" />
@@ -173,7 +176,7 @@ export function SimulationCenter() {
               {result ? (
                 <div className="grid gap-4">
                   <div className="grid gap-3 md:grid-cols-4">
-                    <Badge variant="success">Cash Flow {formatCurrency(result.comparison.after.monthlySurplus)}</Badge>
+                    <Badge variant="success">Cash Flow {formatCurrency(result.comparison.after.monthlySurplus, profile.currency)}</Badge>
                     <Badge variant="warning">Debt {formatPercent(result.comparison.after.debtRatio, 1)}</Badge>
                     <Badge variant="blue">Risk {result.comparison.after.risk.level}</Badge>
                     <Badge variant="success">Health {result.comparison.after.financialHealth.score}</Badge>
@@ -206,8 +209,8 @@ export function SimulationCenter() {
                       ].map(([label, current, after]) => (
                         <TableRow key={label as string}>
                           <TableCell className="font-semibold">{label}</TableCell>
-                          <TableCell>{formatCurrency(Number(current))}</TableCell>
-                          <TableCell>{formatCurrency(Number(after))}</TableCell>
+                          <TableCell>{formatCurrency(Number(current), profile.currency)}</TableCell>
+                          <TableCell>{formatCurrency(Number(after), profile.currency)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

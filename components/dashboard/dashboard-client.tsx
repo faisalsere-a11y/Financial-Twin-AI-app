@@ -36,12 +36,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ChartFrame } from "@/components/data/chart-frame";
 import { MetricCard } from "@/components/data/metric-card";
-import { AppPageHeader, MiniMetric, NovaOrb } from "@/components/layout/app-shell";
+import { NovaOrb } from "@/components/brand/nova-orb";
+import { AppPageHeader, MiniMetric } from "@/components/layout/app-shell";
 import { compareScenario, forecastGoalCompletion } from "@/lib/financial/engine";
-import { activityFeed, sampleProfile, scenarioLibrary } from "@/lib/financial/sample-data";
-import type { ScenarioInput } from "@/lib/financial/types";
+import { activityFeed, scenarioLibrary } from "@/lib/financial/sample-data";
+import type { FinancialProfile, ScenarioInput } from "@/lib/financial/types";
 import { buildFinancialOverview, type FinancialOverviewViewModel } from "@/lib/presentation/financial-overview";
 import { chartTheme, chartTooltipStyle } from "@/lib/presentation/chart-theme";
+import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import { cn, formatCurrency } from "@/lib/utils";
 
 const scenarioIcons = {
@@ -214,8 +216,8 @@ function CashFlowChart({ overview }: { overview: FinancialOverviewViewModel }) {
   );
 }
 
-function RecommendationPanel({ selected }: { selected: ScenarioInput }) {
-  const comparison = useMemo(() => compareScenario(sampleProfile, selected), [selected]);
+function RecommendationPanel({ selected, profile }: { selected: ScenarioInput; profile: FinancialProfile }) {
+  const comparison = useMemo(() => compareScenario(profile, selected), [profile, selected]);
 
   return (
     <Card id="insights" className="relative overflow-hidden border-violet-400/25 bg-gradient-to-br from-violet-500/10 to-blue-500/[0.06]">
@@ -246,8 +248,8 @@ function RecommendationPanel({ selected }: { selected: ScenarioInput }) {
   );
 }
 
-function ProjectionBars({ selected }: { selected: ScenarioInput }) {
-  const comparison = useMemo(() => compareScenario(sampleProfile, selected), [selected]);
+function ProjectionBars({ selected, profile }: { selected: ScenarioInput; profile: FinancialProfile }) {
+  const comparison = useMemo(() => compareScenario(profile, selected), [profile, selected]);
   const current = [
     { label: "Savings", value: 42 },
     { label: "Debt Payoff", value: 61 },
@@ -285,8 +287,8 @@ function ProjectionBars({ selected }: { selected: ScenarioInput }) {
   );
 }
 
-function TwinSummary({ selected }: { selected: ScenarioInput }) {
-  const comparison = useMemo(() => compareScenario(sampleProfile, selected), [selected]);
+function TwinSummary({ selected, profile }: { selected: ScenarioInput; profile: FinancialProfile }) {
+  const comparison = useMemo(() => compareScenario(profile, selected), [profile, selected]);
   const data = [
     { name: "Cash", value: comparison.after.profile.assets.cash, color: chartTheme.after },
     { name: "Invested", value: comparison.after.profile.assets.investments + comparison.after.profile.assets.retirement, color: chartTheme.current },
@@ -325,8 +327,8 @@ function TwinSummary({ selected }: { selected: ScenarioInput }) {
   );
 }
 
-function GoalTracker() {
-  const goals = forecastGoalCompletion(sampleProfile).slice(0, 4);
+function GoalTracker({ profile }: { profile: FinancialProfile }) {
+  const goals = forecastGoalCompletion(profile).slice(0, 4);
 
   return (
     <Card>
@@ -367,8 +369,9 @@ function RecentSimulations() {
 }
 
 export function DashboardClient() {
+  const { profile } = useFinancialProfile();
   const [selected, setSelected] = useState(scenarioLibrary[1] ?? scenarioLibrary[0]);
-  const overview = useMemo(() => buildFinancialOverview(sampleProfile, selected), [selected]);
+  const overview = useMemo(() => buildFinancialOverview(profile, selected), [profile, selected]);
   const barData = [
     { label: "Income", value: overview.flow.monthlyIncome },
     { label: "Expenses", value: overview.flow.monthlyExpenses },
@@ -413,13 +416,13 @@ export function DashboardClient() {
         </div>
         <div className="grid gap-6">
           <CashFlowChart overview={overview} />
-          <RecommendationPanel selected={selected} />
+          <RecommendationPanel selected={selected} profile={profile} />
         </div>
       </div>
-      <ProjectionBars selected={selected} />
+      <ProjectionBars selected={selected} profile={profile} />
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr_1fr]">
-        <TwinSummary selected={selected} />
-        <GoalTracker />
+        <TwinSummary selected={selected} profile={profile} />
+        <GoalTracker profile={profile} />
         <RecentSimulations />
       </div>
       <Card className="border-blue-400/20">

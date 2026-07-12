@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { forecastGoalCompletion } from "@/lib/financial/engine";
-import { sampleProfile } from "@/lib/financial/sample-data";
+import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import { formatCurrency } from "@/lib/utils";
 
 export function GoalsPage() {
-  const goals = forecastGoalCompletion(sampleProfile);
+  const { profile } = useFinancialProfile();
+  const goals = forecastGoalCompletion(profile);
 
   return (
     <div className="mx-auto max-w-[1280px]">
@@ -35,15 +36,15 @@ export function GoalsPage() {
             <CardContent className="grid gap-4">
               <div>
                 <div className="mb-2 flex justify-between text-sm">
-                  <span className="text-muted-foreground">{formatCurrency(goal.currentAmount)}</span>
-                  <span className="font-bold">{formatCurrency(goal.targetAmount)}</span>
+                  <span className="text-muted-foreground">{formatCurrency(goal.currentAmount, profile.currency)}</span>
+                  <span className="font-bold">{formatCurrency(goal.targetAmount, profile.currency)}</span>
                 </div>
                 <Progress value={goal.progress} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
                   <p className="text-xs text-muted-foreground">Monthly</p>
-                  <p className="font-black">{formatCurrency(goal.monthlyContribution)}</p>
+                  <p className="font-black">{formatCurrency(goal.monthlyContribution, profile.currency)}</p>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
                   <p className="text-xs text-muted-foreground">Forecast</p>

@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectItem } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { AppPageHeader, NovaOrb } from "@/components/layout/app-shell";
+import { NovaOrb } from "@/components/brand/nova-orb";
+import { AppPageHeader } from "@/components/layout/app-shell";
 import { calculateFinancialTwin } from "@/lib/financial/engine";
 import {
   onboardingDefaults,

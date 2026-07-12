@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generateAdvisorRecommendations } from "@/lib/ai/advisor";
 import { compareScenario } from "@/lib/financial/engine";
 import { sampleProfile } from "@/lib/financial/sample-data";
+import { financialProfileSchema } from "@/lib/profile/browser-store";
 
 const simulationSchema = z.object({
   id: z.string().default("custom-scenario"),
@@ -32,14 +33,22 @@ const simulationSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const parsed = simulationSchema.safeParse(body);
+  const body = (await request.json()) as { scenario?: unknown; profile?: unknown } | null;
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid simulation request." }, { status: 400 });
+  }
+  const parsed = simulationSchema.safeParse(body.scenario ?? body);
 
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid simulation input.", issues: parsed.error.flatten() }, { status: 400 });
   }
 
-  const comparison = compareScenario(sampleProfile, parsed.data);
+  const parsedProfile = financialProfileSchema.safeParse(body.profile);
+  if (body.profile !== undefined && !parsedProfile.success) {
+    return NextResponse.json({ error: "Invalid financial profile." }, { status: 400 });
+  }
+
+  const comparison = compareScenario(parsedProfile.success ? parsedProfile.data : sampleProfile, parsed.data);
   const advice = await generateAdvisorRecommendations(comparison);
 
   return NextResponse.json({ comparison, advice });
