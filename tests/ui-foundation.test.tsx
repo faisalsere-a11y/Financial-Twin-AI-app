@@ -62,4 +62,14 @@ describe("UI foundation", () => {
     expect(progress).toContain("bg-muted");
     expect(progress).not.toContain("bg-white");
   });
+
+  it("provides keyboard bypass links for repeated navigation", () => {
+    const shell = readFileSync("components/layout/app-shell.tsx", "utf8");
+    const landing = readFileSync("components/landing/landing-page.tsx", "utf8");
+
+    expect(shell).toContain('href="#main-content"');
+    expect(shell).toContain("Skip to main content");
+    expect(landing).toContain('id="landing-content"');
+    expect(landing).toContain('href="#landing-content"');
+  });
 });

@@ -9,7 +9,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, ChartNoAxesCombined, Lock, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -176,7 +176,7 @@ export function AuthCard({ mode }: { mode: AuthMode }) {
           <CardHeader className="gap-3 p-6 sm:p-8 sm:pb-5">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">{presentation.eyebrow}</p>
-              <CardTitle className="mt-2 text-3xl normal-case tracking-tight sm:text-4xl">{presentation.title}</CardTitle>
+              <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{presentation.title}</h1>
             </div>
             <p className="max-w-md text-sm leading-6 text-muted-foreground">{presentation.helper}</p>
           </CardHeader>

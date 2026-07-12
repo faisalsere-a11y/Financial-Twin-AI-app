@@ -67,9 +67,15 @@ const faq = [
 export function LandingPage() {
   return (
     <main className="gradient-mesh min-h-screen overflow-hidden">
+      <a
+        href="#landing-content"
+        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-glow transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        Skip to main content
+      </a>
       <LandingNav />
 
-      <section className="relative px-4 pb-24 pt-32 lg:pb-32 lg:pt-40">
+      <section id="landing-content" tabIndex={-1} className="relative px-4 pb-24 pt-32 outline-none lg:pb-32 lg:pt-40">
         <div className="pointer-events-none absolute left-1/2 top-8 size-[44rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
         <div className="container relative grid gap-14 xl:grid-cols-[0.82fr_1.18fr] xl:items-center">
           <div>

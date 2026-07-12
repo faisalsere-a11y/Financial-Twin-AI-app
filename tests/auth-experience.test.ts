@@ -12,6 +12,8 @@ describe("authentication experience", () => {
     expect(source).toContain('id="password-error"');
     expect(source).toContain('autoComplete="email"');
     expect(source).toContain('autoComplete="current-password"');
+    expect(source).toContain("<h1");
+    expect(source).toContain("{presentation.title}</h1>");
   });
 
   it("preserves sample access without exposing credentials", () => {

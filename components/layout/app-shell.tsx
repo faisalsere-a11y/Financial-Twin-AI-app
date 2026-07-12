@@ -224,6 +224,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="gradient-mesh min-h-screen">
+      <a
+        href="#main-content"
+        className="app-print-hide fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-glow transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        Skip to main content
+      </a>
       <div className="app-print-hide fixed inset-y-0 left-0 z-40 hidden w-[280px] lg:block">
         <Sidebar />
       </div>
@@ -289,7 +295,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <Topbar />
-        <main id="main-content" className="app-print-main subtle-grid relative min-h-[calc(100vh-78px)] overflow-hidden p-4 lg:p-8">
+        <main id="main-content" tabIndex={-1} className="app-print-main subtle-grid relative min-h-[calc(100vh-78px)] overflow-hidden p-4 outline-none lg:p-8">
           <div className="pointer-events-none absolute right-8 top-8 size-80 rounded-full bg-chart-3/10 blur-3xl" />
           <div className="pointer-events-none absolute bottom-0 left-1/4 size-96 rounded-full bg-positive/[0.08] blur-3xl" />
           <div className="relative">{children}</div>
