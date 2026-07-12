@@ -234,7 +234,7 @@ git commit -m "feat: define honest authentication states"
 - Consumes: the Task 3 auth contract, existing register API, NextAuth credentials provider, and router.
 - Preserves: sample login, local signup, login/signup/recovery routes, and static-export access.
 
-- [ ] **Step 1: Write failing source-contract tests**
+- [x] **Step 1: Write failing source-contract tests**
 
 ```ts
 import { readFileSync } from "node:fs";
@@ -267,19 +267,19 @@ describe("authentication experience", () => {
 });
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Expected: FAIL against the current toast-only, prefilled form.
 
-- [ ] **Step 3: Implement form state and honest outcomes**
+- [x] **Step 3: Implement form state and honest outcomes**
 
 Use empty defaults, `setValue()` for the explicit sample action, inline `status` state with `kind: "info" | "success" | "error"`, field-level validation messages, and mode-specific autocomplete. Forgot submission sets the approved unavailable message and does not redirect or toast success. Static login/signup announces sample mode then routes to the correct destination. Server signup registers, authenticates, then routes to onboarding; server login routes to dashboard. Duplicate or invalid responses remain visible inline.
 
-- [ ] **Step 4: Implement the responsive auth composition**
+- [x] **Step 4: Implement the responsive auth composition**
 
 Use a semantic `<main>` with a wide-screen trust panel showing sample metrics, local-model disclosure, and privacy boundary; render the form in a raised card; retain all cross-route links; and use semantic theme classes only. Mobile renders a compact trust strip before the form.
 
-- [ ] **Step 5: Run full verification and commit**
+- [x] **Step 5: Run full verification and commit**
 
 Run Vitest, ESLint, TypeScript, and production build. Expected: all pass with all routes preserved.
 
