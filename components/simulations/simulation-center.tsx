@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { useForm, type FieldPath } from "react-hook-form";
@@ -106,7 +106,21 @@ function FormField({
 }
 
 export function SimulationCenter() {
-  const { profile, source } = useFinancialProfile();
+  const activeProfile = useFinancialProfile();
+  const { subject, isLoaded, savedAt } = activeProfile;
+  const profileKey = `${subject}:${savedAt ?? "sample"}`;
+  if (!subject || !isLoaded) {
+    return <div aria-live="polite"><AppPageHeader title="Compare the next move before money moves" description="Loading the active account model." /><Card><CardContent className="p-6 text-sm text-muted-foreground">Waiting for an authenticated account.</CardContent></Card></div>;
+  }
+  return <SessionSimulationCenter key={profileKey} activeProfile={activeProfile} />;
+}
+
+function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<typeof useFinancialProfile> }) {
+  const { profile, source, subject } = activeProfile;
+  const activeSubjectRef = useRef(subject);
+  const activeRequestRef = useRef<AbortController | null>(null);
+  const requestGenerationRef = useRef(0);
+  activeSubjectRef.current = subject;
   const [mode, setMode] = useState<"library" | "custom">("library");
   const [selectedScenario, setSelectedScenario] = useState<ScenarioInput>(sampleScenario);
   const [result, setResult] = useState<SimulationResponse | null>(null);
@@ -124,9 +138,13 @@ export function SimulationCenter() {
   }, []);
 
   const mutation = useMutation({
-    mutationFn: async (scenario: ScenarioInput): Promise<SimulationResponse> => {
+    mutationFn: async (request: { scenario: ScenarioInput; profile: typeof profile; subject: string; generation: number }): Promise<SimulationResponse> => {
+      const { scenario, profile: requestProfile } = request;
+      activeRequestRef.current?.abort();
+      const controller = new AbortController();
+      activeRequestRef.current = controller;
       if (isGitHubPages) {
-        const comparison = compareScenario(profile, scenario);
+        const comparison = compareScenario(requestProfile, scenario);
         return {
           comparison,
           advice: comparison.recommendations,
@@ -137,23 +155,49 @@ export function SimulationCenter() {
       const response = await fetch("/api/simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario, profile })
+        body: JSON.stringify({ scenario, profile: requestProfile }),
+        signal: controller.signal
       });
       const body = (await response.json().catch(() => null)) as (SimulationResponse & { error?: string }) | null;
       if (!response.ok || !body) throw new Error(body?.error ?? "The decision could not be analyzed.");
       return body;
     },
-    onMutate: (scenario) => {
-      setStatus({ kind: "info", message: `Analyzing ${scenario.name} against ${profile.name}'s active model.` });
+    onMutate: (request) => {
+      if (request.subject !== activeSubjectRef.current || request.generation !== requestGenerationRef.current) return;
+      setStatus({ kind: "info", message: `Analyzing ${request.scenario.name} against ${request.profile.name}'s active model.` });
     },
-    onSuccess: (data) => {
+    onSuccess: (data, request) => {
+      if (request.subject !== activeSubjectRef.current || request.generation !== requestGenerationRef.current) return;
       setResult(data);
       setStatus({ kind: "success", message: `${data.comparison.scenario.name} analysis complete.` });
     },
-    onError: (error) => {
+    onError: (error, request) => {
+      if (request.subject !== activeSubjectRef.current || request.generation !== requestGenerationRef.current || (error instanceof DOMException && error.name === "AbortError")) return;
       setStatus({ kind: "error", message: error instanceof Error ? error.message : "The decision could not be analyzed." });
     }
   });
+
+  useEffect(() => () => {
+    requestGenerationRef.current += 1;
+    activeRequestRef.current?.abort();
+  }, []);
+
+  const analyze = (scenario: ScenarioInput) => {
+    if (!subject) {
+      setStatus({ kind: "error", message: "Your authenticated profile is not ready. Try again." });
+      return;
+    }
+    const generation = requestGenerationRef.current + 1;
+    requestGenerationRef.current = generation;
+    mutation.mutate({ scenario, profile, subject, generation });
+  };
+
+  const cancelActiveAnalysis = () => {
+    requestGenerationRef.current += 1;
+    activeRequestRef.current?.abort();
+    activeRequestRef.current = null;
+    mutation.reset();
+  };
 
   const resetLab = () => {
     form.reset(defaults);
@@ -161,14 +205,14 @@ export function SimulationCenter() {
     setMode("library");
     setResult(null);
     setStatus(null);
-    mutation.reset();
+    cancelActiveAnalysis();
   };
 
   const selectScenario = (scenario: ScenarioInput) => {
     setSelectedScenario(scenario);
     setResult(null);
     setStatus(null);
-    mutation.reset();
+    cancelActiveAnalysis();
   };
 
   const nova = useMemo(
@@ -242,10 +286,10 @@ export function SimulationCenter() {
                     <div><span className="block text-muted-foreground">Health after</span><strong>{selectedPreview.after.financialHealth.score}/100</strong></div>
                   </div>
                 </div>
-                <Button size="lg" onClick={() => mutation.mutate(selectedScenario)} disabled={mutation.isPending}>Analyze selected scenario<ArrowRight data-icon="inline-end" aria-hidden="true" /></Button>
+                <Button size="lg" onClick={() => analyze(selectedScenario)} disabled={mutation.isPending}>Analyze selected scenario<ArrowRight data-icon="inline-end" aria-hidden="true" /></Button>
               </div>
             ) : (
-              <form onSubmit={form.handleSubmit((submitted) => mutation.mutate(customCarScenario(submitted)))} noValidate className="grid gap-5">
+              <form onSubmit={form.handleSubmit((submitted) => analyze(customCarScenario(submitted)))} noValidate className="grid gap-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="price">Vehicle price</Label>

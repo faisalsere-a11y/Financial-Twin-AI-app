@@ -15,7 +15,6 @@ import { NovaOrb } from "@/components/brand/nova-orb";
 import { AppPageHeader } from "@/components/layout/app-shell";
 import { calculateFinancialTwin } from "@/lib/financial/engine";
 import {
-  onboardingDefaults,
   onboardingSchema,
   onboardingSteps,
   onboardingToFinancialProfile,
@@ -47,24 +46,36 @@ function FormField({ name, label, hint, error, children }: FieldProps) {
 }
 
 export function OnboardingWizard() {
+  const activeProfile = useFinancialProfile();
+  const { subject, isLoaded, savedAt } = activeProfile;
+  const profileKey = `${subject}:${savedAt ?? "sample"}`;
+  if (!subject || !isLoaded) {
+    return <div aria-live="polite"><AppPageHeader title="Build your financial twin" description="Loading the active account model." /><Card><CardContent className="p-6 text-sm text-muted-foreground">Waiting for an authenticated account.</CardContent></Card></div>;
+  }
+  return <SubjectOnboardingWizard key={profileKey} activeProfile={activeProfile} />;
+}
+
+function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<typeof useFinancialProfile> }) {
   const router = useRouter();
-  const { profile, source, savedAt, isLoaded, save } = useFinancialProfile();
-  const hydrated = useRef(false);
+  const { profile, source, subject, savedAt, isLoaded, save } = activeProfile;
+  const hydratedSubject = useRef<string | null>(null);
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const form = useForm<OnboardingValues>({
     resolver: zodResolver(onboardingSchema),
-    defaultValues: onboardingDefaults,
+    defaultValues: profileToOnboardingValues(profile),
     mode: "onBlur"
   });
   const values = form.watch();
   const progress = ((step + 1) / onboardingSteps.length) * 100;
 
   useEffect(() => {
-    if (!isLoaded || hydrated.current) return;
+    if (!isLoaded || !subject || hydratedSubject.current === subject) return;
     form.reset(profileToOnboardingValues(profile));
-    hydrated.current = true;
-  }, [form, isLoaded, profile]);
+    setStep(0);
+    setStatus(null);
+    hydratedSubject.current = subject;
+  }, [form, isLoaded, profile, subject]);
 
   const previewProfile = useMemo(() => {
     const parsed = onboardingSchema.safeParse(values);

@@ -47,8 +47,18 @@ function defaultsForProfile(profile: FinancialProfile): InvestmentInputs {
 }
 
 export function InvestmentSimulator() {
-  const { profile, source, isLoaded } = useFinancialProfile();
-  const hydrated = useRef(false);
+  const activeProfile = useFinancialProfile();
+  const { subject, isLoaded, savedAt } = activeProfile;
+  const profileKey = `${subject}:${savedAt ?? "sample"}`;
+  if (!subject || !isLoaded) {
+    return <div aria-live="polite"><AppPageHeader title="Explore return and risk ranges" description="Loading the active account model." /><Card><CardContent className="p-6 text-sm text-muted-foreground">Waiting for an authenticated account.</CardContent></Card></div>;
+  }
+  return <SubjectInvestmentSimulator key={profileKey} activeProfile={activeProfile} />;
+}
+
+function SubjectInvestmentSimulator({ activeProfile }: { activeProfile: ReturnType<typeof useFinancialProfile> }) {
+  const { profile, source, subject, isLoaded } = activeProfile;
+  const hydratedSubject = useRef<string | null>(null);
   const [asset, setAsset] = useState<AssetType>("ETF");
   const form = useForm<InvestmentInputs>({
     resolver: zodResolver(inputSchema),
@@ -58,10 +68,11 @@ export function InvestmentSimulator() {
   const watched = form.watch();
 
   useEffect(() => {
-    if (!isLoaded || hydrated.current) return;
+    if (!isLoaded || !subject || hydratedSubject.current === subject) return;
     form.reset(defaultsForProfile(profile));
-    hydrated.current = true;
-  }, [form, isLoaded, profile]);
+    setAsset("ETF");
+    hydratedSubject.current = subject;
+  }, [form, isLoaded, profile, subject]);
 
   const parsed = inputSchema.safeParse(watched);
   const inputs = parsed.success ? parsed.data : defaultsForProfile(profile);

@@ -91,4 +91,18 @@ describe("onboarding profile adapter", () => {
       targetAmount: 250_000
     });
   });
+
+  it("does not duplicate an emergency-only goal as the primary goal", () => {
+    const emergency = { ...sampleProfile.goals[0], id: "only-emergency", category: "Emergency" as const, name: "Emergency Fund" };
+    const base = { ...sampleProfile, goals: [emergency] };
+    const values = profileToOnboardingValues(base);
+    const updated = onboardingToFinancialProfile(values, base);
+
+    expect(values).toMatchObject({ goal: "Primary goal", goalAmount: 0 });
+    expect(updated.goals.filter((goal) => goal.category === "Emergency")).toHaveLength(1);
+    expect(updated.goals.find((goal) => goal.category === "House")).toMatchObject({
+      name: "Primary goal",
+      targetAmount: 0
+    });
+  });
 });

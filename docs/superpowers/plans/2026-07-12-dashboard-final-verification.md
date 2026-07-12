@@ -43,11 +43,11 @@ Final verification evidence captured on 2026-07-12:
 - [x] Add per-user simulation API rate limits and AI timeout protection.
 - [x] Fix goal round trips, scenario-aware deterministic advice, and durable-registration failure behavior.
 - [x] Remove inert settings promises, honor reduced motion in JavaScript, and make modal backgrounds inert.
-- [ ] Re-run all automated, server/static, browser, and protected-engine gates; record evidence and obtain a clean follow-up review.
+- [x] Re-run all automated, server/static, browser, and protected-engine gates; record evidence and obtain a clean follow-up review.
 
 Hardening verification evidence captured on 2026-07-12:
 
-- Vitest passed 77/77 tests across 24 files, including behavioral account-isolation, goal-round-trip, deterministic-advice, and per-user rate-limit cases; ESLint, `tsc --noEmit`, and `git diff --check` also passed.
+- Vitest passed 81/81 tests across 24 files, including behavioral account-isolation, goal-round-trip, deterministic-advice, and per-user rate-limit cases; ESLint, `tsc --noEmit`, and `git diff --check` also passed.
 - The authenticated server build generated 18/18 routes and the explicit GitHub Pages sample generated 14/14 routes. The export helper restored `app/api`, preserved all nine tracked planning/specification files, and left no backup paths behind.
 - Browser verification proved anonymous app routes redirect to login, anonymous simulation POST returns 401, durable registration and login succeed, account A reloads its saved model, and account B receives the untouched sample model. Modal background isolation and an error-free console were also verified.
-- The three protected financial/report engines remain byte-for-byte unchanged from `HEAD`; follow-up independent review remains the final open gate.
+- The three protected financial/report engines remain byte-for-byte unchanged from `HEAD`. A follow-up independent review completed with no remaining Critical, Important, or Minor findings after account-switch, profile-revision, and request-cancellation hardening.

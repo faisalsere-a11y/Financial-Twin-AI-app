@@ -18,9 +18,11 @@ describe("launch hardening contracts", () => {
 
   it("guards the server app shell but preserves the explicit static sample", () => {
     const layout = source("app/(app)/layout.tsx");
+    const providers = source("app/providers.tsx");
     expect(layout).toContain('process.env.GITHUB_PAGES !== "true"');
     expect(layout).toContain("await auth()");
     expect(layout).toContain('redirect("/login")');
+    expect(providers).toContain('process.env.NEXT_PUBLIC_GITHUB_PAGES === "true" ? null : undefined');
   });
 
   it("authenticates and rate limits the paid simulation endpoint", () => {
@@ -29,7 +31,7 @@ describe("launch hardening contracts", () => {
     expect(route).toContain("status: 401");
     expect(route).toContain("status: 429");
     expect(route).toContain('"Retry-After"');
-    expect(source("lib/ai/advisor.ts")).toContain("timeout:");
+    expect(source("lib/ai/advisor.ts")).toContain("timeout,");
   });
 
   it("does not report an in-memory registration as durable", () => {
@@ -37,6 +39,48 @@ describe("launch hardening contracts", () => {
     const route = source("app/api/auth/register/route.ts");
     expect(store).toContain('reason: "unavailable"');
     expect(route).toContain("status: 503");
+    expect(route).toContain('error: "Invalid registration request."');
+  });
+
+  it("gives the external advisor the active profile currency", () => {
+    const advisor = source("lib/ai/advisor.ts");
+    expect(advisor).toContain("currency: comparison.current.profile.currency");
+    expect(advisor).toContain("provided profile currency");
+  });
+
+  it("rehydrates every profile-backed form when the session subject changes", () => {
+    for (const path of [
+      "components/settings/settings-page.tsx",
+      "components/onboarding/onboarding-wizard.tsx",
+      "components/investments/investment-simulator.tsx"
+    ]) {
+      const form = source(path);
+      expect(form).toContain("hydratedSubject");
+      expect(form).toContain("hydratedSubject.current === subject");
+      expect(form).toContain("key={profileKey}");
+      expect(form).toContain('const profileKey = `${subject}:${savedAt ?? "sample"}`');
+      expect(form).toContain("if (!subject || !isLoaded)");
+      expect(form).toContain("activeProfile={activeProfile}");
+    }
+    const simulation = source("components/simulations/simulation-center.tsx");
+    expect(simulation).toContain("activeSubjectRef");
+    expect(simulation).toContain("request.subject !== activeSubjectRef.current");
+    expect(simulation).toContain("activeRequestRef.current?.abort()");
+    expect(simulation).toContain("requestGenerationRef");
+    expect(simulation).toContain("cancelActiveAnalysis");
+    expect(simulation).toContain("activeProfile={activeProfile}");
+    expect(simulation).toContain("key={profileKey}");
+    const settings = source("components/settings/settings-page.tsx");
+    expect(settings).toContain("status={status}");
+    expect(settings).toContain("setStatus={setStatus}");
+  });
+
+  it("keeps the paid advisor disabled by default and bounds single-process limiter state", () => {
+    expect(source("lib/ai/advisor.ts")).toContain('process.env.AI_ADVISOR_ENABLED !== "true"');
+    const limiter = source("lib/server/simulation-rate-limit.ts");
+    expect(limiter).toContain("MAX_TRACKED_SUBJECTS");
+    expect(limiter).toContain("requestWindows.delete");
+    expect(source(".env.example")).toContain('AI_ADVISOR_ENABLED="false"');
   });
 
   it("honors reduced motion and makes modal backgrounds inert", () => {

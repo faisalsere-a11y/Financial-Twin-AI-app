@@ -87,8 +87,7 @@ function totalMonthlyIncome(profile: FinancialProfile) {
 
 function primaryGoalFor(profile: FinancialProfile) {
   return profile.goals.find((goal) => goal.category === "House")
-    ?? profile.goals.find((goal) => goal.category !== "Emergency")
-    ?? profile.goals[0];
+    ?? profile.goals.find((goal) => goal.category !== "Emergency");
 }
 
 export function profileToOnboardingValues(profile: FinancialProfile): OnboardingValues {
@@ -159,7 +158,7 @@ export function onboardingToFinancialProfile(values: OnboardingValues, baseProfi
       currentAmount: values.emergencyFund, monthlyContribution: 0, targetDate: "2027-12-31", priority: "High"
     });
   }
-  if (!selectedPrimaryGoal || selectedPrimaryGoal.category === "Emergency") {
+  if (!selectedPrimaryGoal) {
     goals.push({
       id: `${baseProfile.id}-primary`, name: values.goal, category: "House", targetAmount: values.goalAmount,
       currentAmount: 0, monthlyContribution: 0, targetDate: "2030-12-31", priority: "High"

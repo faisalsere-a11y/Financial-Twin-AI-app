@@ -17,7 +17,7 @@ Lazyweb design report: https://www.lazyweb.com/report/lazyweb/439109ff-1df8-4af5
 - React Hook Form, Zod, TanStack Query
 - NextAuth credentials auth
 - Prisma schema and SQLite demo database
-- OpenAI SDK with mocked recommendations when `OPENAI_API_KEY` is unavailable
+- OpenAI SDK with deterministic recommendations by default
 
 ## Pages
 
@@ -61,5 +61,5 @@ The test suite covers the financial twin engine, scenario comparison, investment
 ## Notes
 
 - Demo data is Saudi-focused and uses SAR.
-- AI recommendations use OpenAI when `OPENAI_API_KEY` exists; otherwise the app returns deterministic, context-aware mock recommendations.
-- This is a hackathon-ready demo. A production launch should add encrypted financial fields, audit logs, KMS-backed secrets, stronger auth policies, formal compliance review, and institution-grade data retention controls.
+- AI recommendations remain deterministic unless both `OPENAI_API_KEY` is set and `AI_ADVISOR_ENABLED=true`. The paid path uses a bounded per-user limiter intended only for the documented single persistent-process deployment. Keep paid AI disabled in horizontally scaled or serverless deployments until a shared rate-limit/quota store is configured.
+- This is a launch-ready prototype, not a regulated financial service. A production financial deployment still requires encrypted financial fields, audit logs, KMS-backed secrets, stronger auth policies, formal compliance review, and institution-grade data retention controls.

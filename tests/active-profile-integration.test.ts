@@ -32,7 +32,7 @@ describe("active financial profile integration", () => {
     const client = read("components/simulations/simulation-center.tsx");
     const route = read("app/api/simulations/route.ts");
 
-    expect(client).toContain("JSON.stringify({ scenario, profile })");
+    expect(client).toContain("JSON.stringify({ scenario, profile: requestProfile })");
     expect(route).toContain("financialProfileSchema");
     expect(route).toContain("body.profile");
     expect(route).toContain("body.scenario ?? body");

@@ -13,6 +13,8 @@ import { Select, SelectItem } from "@/components/ui/select";
 import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import type { CurrencyCode } from "@/lib/financial/types";
 
+type SettingsStatus = { kind: "info" | "success" | "error"; message: string } | null;
+
 function SettingRow({
   icon: Icon,
   id,
@@ -53,27 +55,55 @@ function initialsFor(name: string) {
 }
 
 export function SettingsPage() {
+  const activeProfile = useFinancialProfile();
+  const { subject, isLoaded, savedAt } = activeProfile;
+  const profileKey = `${subject}:${savedAt ?? "sample"}`;
+  const lastSubject = useRef(subject);
+  const [status, setStatus] = useState<SettingsStatus>(null);
+
+  useEffect(() => {
+    if (lastSubject.current === subject) return;
+    lastSubject.current = subject;
+    setStatus(null);
+  }, [subject]);
+
+  if (!subject || !isLoaded) {
+    return <div aria-live="polite"><AppPageHeader title="Settings" description="Loading the active account model." /><Card><CardContent className="p-6 text-sm text-muted-foreground">Waiting for an authenticated account.</CardContent></Card></div>;
+  }
+  return <SubjectSettingsPage key={profileKey} activeProfile={activeProfile} status={status} setStatus={setStatus} />;
+}
+
+function SubjectSettingsPage({
+  activeProfile,
+  status,
+  setStatus
+}: {
+  activeProfile: ReturnType<typeof useFinancialProfile>;
+  status: SettingsStatus;
+  setStatus: React.Dispatch<React.SetStateAction<SettingsStatus>>;
+}) {
   const { theme, setTheme } = useTheme();
   const {
     profile,
     source,
+    subject,
     savedAt: profileSavedAt,
     isLoaded: profileLoaded,
     save: saveActiveProfile,
     reset: resetActiveProfile
-  } = useFinancialProfile();
-  const profileHydrated = useRef(false);
+  } = activeProfile;
+  const hydratedSubject = useRef<string | null>(null);
   const [profileName, setProfileName] = useState(profile.name);
   const [currency, setCurrency] = useState<CurrencyCode>(profile.currency);
   const [resetArmed, setResetArmed] = useState(false);
-  const [status, setStatus] = useState<{ kind: "info" | "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
-    if (!profileLoaded || profileHydrated.current) return;
+    if (!profileLoaded || !subject || hydratedSubject.current === subject) return;
     setProfileName(profile.name);
     setCurrency(profile.currency);
-    profileHydrated.current = true;
-  }, [profile, profileLoaded]);
+    setResetArmed(false);
+    hydratedSubject.current = subject;
+  }, [profile, profileLoaded, subject]);
 
   const saveSettings = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

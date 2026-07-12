@@ -47,14 +47,18 @@ function mockAdvice(comparison: ScenarioComparison) {
 }
 
 export async function generateAdvisorResponse(comparison: ScenarioComparison): Promise<AdvisorResponse> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY || process.env.AI_ADVISOR_ENABLED !== "true") {
     return buildAdvisorResponse(mockAdvice(comparison), "deterministic");
   }
 
   try {
+    const configuredTimeout = Number(process.env.OPENAI_TIMEOUT_MS ?? 10_000);
+    const timeout = Number.isFinite(configuredTimeout) && configuredTimeout > 0
+      ? Math.min(configuredTimeout, 60_000)
+      : 10_000;
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-      timeout: Number(process.env.OPENAI_TIMEOUT_MS ?? 10_000),
+      timeout,
       maxRetries: 1
     });
     const response = await client.chat.completions.create({
@@ -64,12 +68,13 @@ export async function generateAdvisorResponse(comparison: ScenarioComparison): P
         {
           role: "system",
           content:
-            "You are Financial Twin AI, a concise Saudi-focused financial planning assistant. Return four short, specific recommendations in SAR. Do not provide regulated financial advice disclaimers."
+            "You are Financial Twin AI, a concise financial planning assistant. Return four short, specific recommendations in the provided profile currency. Do not provide regulated financial advice disclaimers."
         },
         {
           role: "user",
           content: JSON.stringify({
             scenario: comparison.scenario,
+            currency: comparison.current.profile.currency,
             current: {
               surplus: comparison.current.monthlySurplus,
               debtRatio: comparison.current.debtRatio,
