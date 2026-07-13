@@ -371,8 +371,8 @@ function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<
                       <XAxis dataKey="month" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
                       <YAxis stroke={chartTheme.axis} tickLine={false} axisLine={false} />
                       <Tooltip contentStyle={chartTooltipStyle} />
-                      <Area type="monotone" dataKey="current" stroke={chartTheme.current} fill={chartTheme.current} fillOpacity={0.1} isAnimationActive={!shouldReduceMotion} animationDuration={motionTokens.deliberate * 1000} />
-                      <Area type="monotone" dataKey="after" stroke={chartTheme.after} fill={chartTheme.after} fillOpacity={0.12} isAnimationActive={!shouldReduceMotion} animationDuration={motionTokens.deliberate * 1000} />
+                      <Area type="monotone" dataKey="current" stroke={chartTheme.current} fill={chartTheme.current} fillOpacity={0.1} isAnimationActive={false} />
+                      <Area type="monotone" dataKey="after" stroke={chartTheme.after} fill={chartTheme.after} fillOpacity={0.12} isAnimationActive={false} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>

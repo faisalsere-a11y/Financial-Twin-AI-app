@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { NovaOrb } from "@/components/brand/nova-orb";
-import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
+import { PageTransition } from "@/components/motion/page-transition";
+import { Stagger, StaggerItem } from "@/components/motion/reveal";
 import {
   authPresentation,
   getAuthDefaults,
@@ -135,9 +136,10 @@ export function AuthCard({ mode }: { mode: AuthMode }) {
   const nameError = form.formState.errors.name?.message;
 
   return (
-    <main className="relative isolate min-h-screen overflow-x-clip px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.12),transparent_34%),radial-gradient(circle_at_bottom_right,hsl(var(--positive)/0.08),transparent_30%)]" />
-      <Reveal className="mx-auto grid min-h-[calc(100vh-4rem)] w-full min-w-0 max-w-6xl items-center gap-6 lg:min-h-[calc(100vh-6rem)] lg:grid-cols-[minmax(0,1.05fr)_minmax(25rem,0.78fr)] lg:gap-12">
+    <PageTransition>
+      <main className="relative isolate min-h-screen overflow-x-clip px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.12),transparent_34%),radial-gradient(circle_at_bottom_right,hsl(var(--positive)/0.08),transparent_30%)]" />
+        <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full min-w-0 max-w-6xl items-center gap-6 lg:min-h-[calc(100vh-6rem)] lg:grid-cols-[minmax(0,1.05fr)_minmax(25rem,0.78fr)] lg:gap-12">
         <section aria-labelledby="auth-trust-title" className="min-w-0 rounded-2xl border border-border bg-card/55 p-5 shadow-glass backdrop-blur sm:p-7 lg:border-0 lg:bg-transparent lg:p-4 lg:shadow-none lg:backdrop-blur-none">
           <div className="flex min-w-0 items-center gap-3">
             <NovaOrb className="size-11 shrink-0" />
@@ -254,7 +256,8 @@ export function AuthCard({ mode }: { mode: AuthMode }) {
             </nav>
           </CardContent>
         </Card>
-      </Reveal>
-    </main>
+        </div>
+      </main>
+    </PageTransition>
   );
 }

@@ -134,8 +134,7 @@ export function ReportsPage() {
                       fill={chartTheme.current}
                       fillOpacity={0.14}
                       strokeWidth={3}
-                      isAnimationActive={!shouldReduceMotion}
-                      animationDuration={motionTokens.deliberate * 1000}
+                      isAnimationActive={false}
                     />
                     <Area
                       type="monotone"
@@ -145,8 +144,7 @@ export function ReportsPage() {
                       fill={chartTheme.after}
                       fillOpacity={0.08}
                       strokeWidth={2}
-                      isAnimationActive={!shouldReduceMotion}
-                      animationDuration={motionTokens.deliberate * 1000}
+                      isAnimationActive={false}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
