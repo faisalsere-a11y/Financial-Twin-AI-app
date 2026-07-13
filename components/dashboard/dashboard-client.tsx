@@ -33,6 +33,8 @@ import { NovaOrb } from "@/components/brand/nova-orb";
 import { ChartFrame } from "@/components/data/chart-frame";
 import { MetricCard } from "@/components/data/metric-card";
 import { AppPageHeader, MiniMetric } from "@/components/layout/app-shell";
+import { AnimatedNumber } from "@/components/motion/animated-number";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,13 +43,18 @@ import { compareScenario, forecastGoalCompletion } from "@/lib/financial/engine"
 import { scenarioLibrary } from "@/lib/financial/sample-data";
 import type { FinancialProfile, ScenarioInput } from "@/lib/financial/types";
 import { chartTheme, chartTooltipStyle } from "@/lib/presentation/chart-theme";
-import { buildFinancialOverview, type FinancialOverviewViewModel } from "@/lib/presentation/financial-overview";
+import {
+  buildFinancialOverview,
+  type FinancialOverviewViewModel,
+  type MetricViewModel
+} from "@/lib/presentation/financial-overview";
 import { buildNovaDecisionView } from "@/lib/presentation/nova-decision";
 import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import { clamp, cn, formatCurrency } from "@/lib/utils";
 
 const recommendedScenario: ScenarioInput =
   scenarioLibrary.find((scenario) => scenario.tags.some((tag) => tag === "Recommended")) ?? scenarioLibrary[0]!;
+const chartAnimationDuration = 420;
 
 const scenarioIcons = {
   car: Car,
@@ -63,12 +70,30 @@ const scenarioIcons = {
   retirement: PiggyBank
 };
 
+function formatPrimaryMetric(
+  metric: MetricViewModel,
+  value: number,
+  currency: FinancialProfile["currency"]
+): string {
+  switch (metric.id) {
+    case "net-worth":
+    case "monthly-surplus":
+      return formatCurrency(value, currency);
+    case "emergency-runway":
+      return `${value.toFixed(1)} months`;
+    case "health-score":
+      return `${Math.round(value)}/100`;
+  }
+
+  return value.toLocaleString("en-US");
+}
+
 function HealthRing({ score }: { score: number }) {
   const reduceMotion = useReducedMotion();
   const finalOffset = 157 - (score / 100) * 157;
   return (
     <div
-      className="relative flex size-16 items-center justify-center"
+      className="relative flex size-16 shrink-0 items-center justify-center"
       role="img"
       aria-label={`Financial health score ${score} out of 100`}
     >
@@ -85,10 +110,12 @@ function HealthRing({ score }: { score: number }) {
           strokeDasharray={157}
           initial={{ strokeDashoffset: reduceMotion ? finalOffset : 157 }}
           animate={{ strokeDashoffset: finalOffset }}
-          transition={{ duration: reduceMotion ? 0 : 0.8, ease: "easeOut" }}
+          transition={{ duration: reduceMotion ? 0 : chartAnimationDuration / 1000, ease: "easeOut" }}
         />
       </svg>
-      <span className="absolute text-xs font-black" aria-hidden="true">{score}</span>
+      <span className="absolute text-xs font-black" aria-hidden="true">
+        <AnimatedNumber value={score} duration={chartAnimationDuration / 1000} />
+      </span>
     </div>
   );
 }
@@ -103,43 +130,62 @@ function IdentityHeader({
   const currency = overview.profile.currency;
 
   return (
-    <Card id="twin" className="glass-panel-strong relative overflow-hidden border-primary/25 bg-gradient-to-br from-primary/10 via-card to-chart-3/10">
-      <div className="scanline pointer-events-none absolute inset-0 opacity-15" />
-      <CardContent className="relative grid gap-5 p-5 xl:grid-cols-[1.1fr_auto_1.7fr] xl:items-center">
-        <div className="flex items-center gap-5">
-          <div className="relative flex size-20 items-center justify-center rounded-3xl border border-primary/20 bg-card shadow-glow">
-            <NovaOrb className="size-12" />
-            <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-card bg-positive text-[9px] font-black text-primary-foreground">
-              AI
-            </span>
-          </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">Financial model ready</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight">{overview.profile.name}</h2>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge variant="success">Calculated locally</Badge>
-              <Badge variant={source === "saved" ? "blue" : "secondary"}>
-                {source === "saved" ? "Saved profile" : "Sample model"}
-              </Badge>
-              <span className="text-xs text-muted-foreground">No live bank connection</span>
+    <Reveal className="min-w-0">
+      <Card id="twin" className="glass-panel-strong relative min-w-0 overflow-hidden border-primary/25 bg-gradient-to-br from-primary/10 via-card to-chart-3/10">
+        <div className="scanline pointer-events-none absolute inset-0 opacity-15" />
+        <CardContent className="relative grid min-w-0 gap-5 p-5 xl:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1.7fr)] xl:items-center">
+          <div className="flex min-w-0 items-center gap-5">
+            <div className="relative flex size-20 shrink-0 items-center justify-center rounded-3xl border border-primary/20 bg-card shadow-glow">
+              <NovaOrb className="size-12" />
+              <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-card bg-positive text-[9px] font-black text-primary-foreground">
+                AI
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="break-words text-xs font-black uppercase tracking-[0.18em] text-primary">Financial model ready</p>
+              <h2 className="mt-1 break-words text-2xl font-black tracking-tight">{overview.profile.name}</h2>
+              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+                <Badge variant="success">Calculated locally</Badge>
+                <Badge variant={source === "saved" ? "blue" : "secondary"}>
+                  {source === "saved" ? "Saved profile" : "Sample model"}
+                </Badge>
+                <span className="break-words text-xs text-muted-foreground">No live bank connection</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3 border-border xl:border-l xl:border-r xl:px-6">
-          <HealthRing score={overview.health.score} />
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Health score</p>
-            <p className="font-bold text-positive">{overview.health.band}</p>
+          <div className="flex min-w-0 items-center gap-3 border-border xl:border-l xl:border-r xl:px-6">
+            <HealthRing score={overview.health.score} />
+            <div className="min-w-0">
+              <p className="break-words text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Health score</p>
+              <p className="break-words font-bold text-positive">{overview.health.band}</p>
+            </div>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <MiniMetric label="Monthly income" value={formatCurrency(overview.flow.monthlyIncome, currency)} />
-          <MiniMetric label="Monthly expenses" value={formatCurrency(overview.flow.monthlyExpenses, currency)} />
-          <MiniMetric label="Obligations" value={`${formatCurrency(overview.flow.monthlyDebtPayment, currency)}/mo`} />
-          <MiniMetric label="Savings balance" value={formatCurrency(overview.flow.savingsBalance, currency)} />
-        </div>
-      </CardContent>
-    </Card>
+          <div className="grid min-w-0 grid-cols-2 items-stretch gap-3 2xl:grid-cols-[repeat(4,minmax(0,1fr))]">
+            <MiniMetric
+              label="Monthly income"
+              numericValue={overview.flow.monthlyIncome}
+              format={(value) => formatCurrency(value, currency)}
+            />
+            <MiniMetric
+              label="Monthly expenses"
+              numericValue={overview.flow.monthlyExpenses}
+              format={(value) => formatCurrency(value, currency)}
+            />
+            <MiniMetric
+              label="Obligations"
+              numericValue={overview.flow.monthlyDebtPayment}
+              format={(value) => formatCurrency(value, currency)}
+              suffix="/mo"
+            />
+            <MiniMetric
+              label="Savings balance"
+              numericValue={overview.flow.savingsBalance}
+              format={(value) => formatCurrency(value, currency)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </Reveal>
   );
 }
 
@@ -167,7 +213,7 @@ function ScenarioTile({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "glass-panel flex min-h-44 flex-col items-start justify-between rounded-2xl p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "glass-panel flex h-full min-h-44 w-full min-w-0 flex-col items-start justify-between rounded-2xl p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         selected && "border-primary/45 bg-gradient-to-br from-primary/15 to-chart-3/10 shadow-glow"
       )}
     >
@@ -177,9 +223,9 @@ function ScenarioTile({
         </span>
         <Badge variant={tone}>{scenario.tags[0]}</Badge>
       </span>
-      <span>
-        <span className="block font-black">{scenario.name}</span>
-        <span className="mt-2 block text-sm font-semibold text-muted-foreground">
+      <span className="min-w-0">
+        <span className="block break-words font-black">{scenario.name}</span>
+        <span className="mt-2 block break-words text-sm font-semibold text-muted-foreground">
           {delta >= 0 ? "+" : ""}{formatCurrency(delta, currency)} /mo
         </span>
       </span>
@@ -190,43 +236,68 @@ function ScenarioTile({
   );
 }
 
-function CashFlowChart({ overview }: { overview: FinancialOverviewViewModel }) {
+function CashFlowChart({
+  overview,
+  reduceMotion
+}: {
+  overview: FinancialOverviewViewModel;
+  reduceMotion: boolean;
+}) {
   return (
-    <ChartFrame
-      title="Future cash flow"
-      description={`Current path compared with ${overview.decision.name}`}
-      summary={overview.cashFlowSummary}
-      className="min-h-72"
-      action={
-        <div className="flex gap-3 text-xs" aria-hidden="true">
-          <span className="flex items-center gap-2 text-primary"><span className="h-0.5 w-3 bg-chart-1" />Current</span>
-          <span className="flex items-center gap-2 text-positive"><span className="h-0.5 w-3 bg-chart-2" />After</span>
+    <Reveal className="h-full min-w-0">
+      <ChartFrame
+        title="Future cash flow"
+        description={`Current path compared with ${overview.decision.name}`}
+        summary={overview.cashFlowSummary}
+        className="h-full min-h-72 min-w-0"
+        action={
+          <div className="flex gap-3 text-xs" aria-hidden="true">
+            <span className="flex items-center gap-2 text-primary"><span className="h-0.5 w-3 bg-chart-1" />Current</span>
+            <span className="flex items-center gap-2 text-positive"><span className="h-0.5 w-3 bg-chart-2" />After</span>
+          </div>
+        }
+      >
+        <div className="h-56 min-w-0" aria-hidden="true">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={overview.cashFlow}>
+              <defs>
+                <linearGradient id="dashboard-after" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={chartTheme.after} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={chartTheme.after} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="dashboard-current" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={chartTheme.current} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={chartTheme.current} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke={chartTheme.grid} vertical={false} />
+              <XAxis dataKey="month" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
+              <YAxis stroke={chartTheme.axis} tickLine={false} axisLine={false} />
+              <Tooltip contentStyle={chartTooltipStyle} />
+              <Area
+                type="monotone"
+                dataKey="current"
+                stroke={chartTheme.current}
+                strokeWidth={2}
+                fill="url(#dashboard-current)"
+                isAnimationActive={!reduceMotion}
+                animationDuration={chartAnimationDuration}
+              />
+              <Area
+                type="monotone"
+                dataKey="after"
+                stroke={chartTheme.after}
+                strokeWidth={2.5}
+                strokeDasharray="6 5"
+                fill="url(#dashboard-after)"
+                isAnimationActive={!reduceMotion}
+                animationDuration={chartAnimationDuration}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-      }
-    >
-      <div className="h-56" aria-hidden="true">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={overview.cashFlow}>
-            <defs>
-              <linearGradient id="dashboard-after" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={chartTheme.after} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={chartTheme.after} stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="dashboard-current" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={chartTheme.current} stopOpacity={0.22} />
-                <stop offset="100%" stopColor={chartTheme.current} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke={chartTheme.grid} vertical={false} />
-            <XAxis dataKey="month" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
-            <YAxis stroke={chartTheme.axis} tickLine={false} axisLine={false} />
-            <Tooltip contentStyle={chartTooltipStyle} />
-            <Area type="monotone" dataKey="current" stroke={chartTheme.current} strokeWidth={2} fill="url(#dashboard-current)" />
-            <Area type="monotone" dataKey="after" stroke={chartTheme.after} strokeWidth={2.5} strokeDasharray="6 5" fill="url(#dashboard-after)" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </ChartFrame>
+      </ChartFrame>
+    </Reveal>
   );
 }
 
@@ -240,17 +311,17 @@ function NovaDecisionPanel({ selected, profile }: { selected: ScenarioInput; pro
   }[decision.recommendation.tone];
 
   return (
-    <Card id="insights" className={cn("relative overflow-hidden", toneClass)}>
+    <Card id="insights" className={cn("relative h-full min-w-0 overflow-hidden", toneClass)}>
       <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle className="flex items-center gap-2 text-base normal-case tracking-normal">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+          <CardTitle className="flex min-w-0 items-center gap-2 break-words text-base normal-case tracking-normal">
             <NovaOrb className="size-7" />
             NOVA decision brief
           </CardTitle>
           <Badge variant="secondary">{decision.provenance.label}</Badge>
         </div>
-        <h3 className="pt-2 text-xl font-black">{decision.recommendation.title}</h3>
-        <p className="text-sm leading-6 text-muted-foreground">{decision.recommendation.summary}</p>
+        <h3 className="break-words pt-2 text-xl font-black">{decision.recommendation.title}</h3>
+        <p className="break-words text-sm leading-6 text-muted-foreground">{decision.recommendation.summary}</p>
       </CardHeader>
       <CardContent className="grid gap-4">
         <dl className="grid gap-3 sm:grid-cols-2">
@@ -341,7 +412,15 @@ function DecisionEvidence({ selected, profile }: { selected: ScenarioInput; prof
   );
 }
 
-function TwinSummary({ selected, profile }: { selected: ScenarioInput; profile: FinancialProfile }) {
+function TwinSummary({
+  selected,
+  profile,
+  reduceMotion
+}: {
+  selected: ScenarioInput;
+  profile: FinancialProfile;
+  reduceMotion: boolean;
+}) {
   const comparison = useMemo(() => compareScenario(profile, selected), [profile, selected]);
   const debtBalance = comparison.after.profile.debts.reduce((sum, debt) => sum + debt.balance, 0);
   const data = [
@@ -353,25 +432,40 @@ function TwinSummary({ selected, profile }: { selected: ScenarioInput; profile: 
   const summary = `After ${selected.name}, modeled assets include ${formatCurrency(data[0].value, profile.currency)} cash and ${formatCurrency(data[1].value, profile.currency)} invested, against ${formatCurrency(debtBalance, profile.currency)} debt.`;
 
   return (
-    <ChartFrame title="Decision balance sheet" description={`Modeled balances after ${selected.name}.`} summary={summary}>
-      <div className="grid gap-5 sm:grid-cols-[160px_1fr] sm:items-center">
-        <div className="h-40" aria-hidden="true">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={data} dataKey="value" innerRadius={43} outerRadius={66} paddingAngle={4}>
-                {data.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
-              </Pie>
-              <Tooltip contentStyle={chartTooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
+    <Reveal className="h-full min-w-0">
+      <ChartFrame
+        title="Decision balance sheet"
+        description={`Modeled balances after ${selected.name}.`}
+        summary={summary}
+        className="h-full min-w-0"
+      >
+        <div className="grid min-w-0 gap-5 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-center">
+          <div className="h-40 min-w-0" aria-hidden="true">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  innerRadius={43}
+                  outerRadius={66}
+                  paddingAngle={4}
+                  isAnimationActive={!reduceMotion}
+                  animationDuration={chartAnimationDuration}
+                >
+                  {data.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
+                </Pie>
+                <Tooltip contentStyle={chartTooltipStyle} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid min-w-0 gap-3">
+            <MiniMetric label="Risk profile" value={`${comparison.after.risk.level} (${comparison.after.risk.score})`} />
+            <MiniMetric label="Emergency fund" value={`${comparison.after.emergencyFundMonths.toFixed(1)} months`} />
+            <MiniMetric label="Health impact" value={`${comparison.delta.healthScore >= 0 ? "+" : ""}${comparison.delta.healthScore} points`} />
+          </div>
         </div>
-        <div className="grid gap-3">
-          <MiniMetric label="Risk profile" value={`${comparison.after.risk.level} (${comparison.after.risk.score})`} />
-          <MiniMetric label="Emergency fund" value={`${comparison.after.emergencyFundMonths.toFixed(1)} months`} />
-          <MiniMetric label="Health impact" value={`${comparison.delta.healthScore >= 0 ? "+" : ""}${comparison.delta.healthScore} points`} />
-        </div>
-      </div>
-    </ChartFrame>
+      </ChartFrame>
+    </Reveal>
   );
 }
 
@@ -441,6 +535,7 @@ function DecisionHistory() {
 
 export function DashboardClient() {
   const { profile, source } = useFinancialProfile();
+  const reduceMotion = useReducedMotion() === true;
   const [selected, setSelected] = useState(recommendedScenario);
   const [selectionStatus, setSelectionStatus] = useState(`${recommendedScenario.name} selected.`);
   const overview = useMemo(() => buildFinancialOverview(profile, selected), [profile, selected]);
@@ -458,7 +553,7 @@ export function DashboardClient() {
   };
 
   return (
-    <div className="mx-auto flex max-w-[1440px] flex-col gap-6">
+    <div className="mx-auto flex min-w-0 max-w-[1440px] flex-col gap-6">
       <AppPageHeader
         title="Twin cockpit"
         description="A local financial command center where NOVA compares decisions, risk, cash flow, savings, debt, and goals from your active model."
@@ -475,58 +570,78 @@ export function DashboardClient() {
       />
       <p role="status" aria-live="polite" className="sr-only">{selectionStatus}</p>
       <IdentityHeader overview={overview} source={source} />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {overview.metrics.map((metric) => <MetricCard key={metric.id} metric={metric} />)}
+      <div className="grid min-w-0 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {overview.metrics.map((metric) => (
+          <MetricCard
+            key={metric.id}
+            metric={metric}
+            format={(value) => formatPrimaryMetric(metric, value, profile.currency)}
+          />
+        ))}
       </div>
 
-      <section aria-labelledby="quick-comparisons-title" className="grid gap-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
+      <section aria-labelledby="quick-comparisons-title" className="grid min-w-0 gap-4">
+        <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
             <h2 id="quick-comparisons-title" className="text-xl font-black">Quick decision comparisons</h2>
             <p className="mt-1 text-sm text-muted-foreground">Select a scenario to update every comparison below.</p>
           </div>
           <Button asChild variant="ghost" size="sm"><Link href="/simulations">Explore all scenarios <ArrowRight className="size-4" aria-hidden="true" /></Link></Button>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Stagger className="grid min-w-0 grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
           {scenarioLibrary.slice(0, 4).map((scenario) => (
-            <ScenarioTile
-              key={scenario.id}
-              scenario={scenario}
-              selected={selected.id === scenario.id}
-              currency={profile.currency}
-              onSelect={() => selectScenario(scenario)}
-            />
+            <StaggerItem key={scenario.id} className="h-full min-w-0">
+              <ScenarioTile
+                scenario={scenario}
+                selected={selected.id === scenario.id}
+                currency={profile.currency}
+                onSelect={() => selectScenario(scenario)}
+              />
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_1fr]">
-        <CashFlowChart overview={overview} />
-        <NovaDecisionPanel selected={selected} profile={profile} />
+      <div className="grid min-w-0 items-stretch gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+        <CashFlowChart overview={overview} reduceMotion={reduceMotion} />
+        <Reveal className="h-full min-w-0">
+          <NovaDecisionPanel selected={selected} profile={profile} />
+        </Reveal>
       </div>
-      <DecisionEvidence selected={selected} profile={profile} />
-      <div className="grid gap-6 xl:grid-cols-3">
-        <TwinSummary selected={selected} profile={profile} />
+      <Reveal className="min-w-0">
+        <DecisionEvidence selected={selected} profile={profile} />
+      </Reveal>
+      <div className="grid min-w-0 items-stretch gap-6 xl:grid-cols-3">
+        <TwinSummary selected={selected} profile={profile} reduceMotion={reduceMotion} />
         <GoalTracker profile={profile} />
         <DecisionHistory />
       </div>
-      <ChartFrame
-        title="Monthly flow composition"
-        description="Current recurring income, expenses, debt obligations, and surplus from the active profile."
-        summary={flowSummary}
-      >
-        <div className="h-64" aria-hidden="true">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={barData}>
-              <CartesianGrid stroke={chartTheme.grid} vertical={false} />
-              <XAxis dataKey="label" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
-              <YAxis stroke={chartTheme.axis} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={chartTooltipStyle} />
-              <Bar dataKey="value" fill={chartTheme.current} radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </ChartFrame>
+      <Reveal className="min-w-0">
+        <ChartFrame
+          title="Monthly flow composition"
+          description="Current recurring income, expenses, debt obligations, and surplus from the active profile."
+          summary={flowSummary}
+          className="min-w-0"
+        >
+          <div className="h-64 min-w-0" aria-hidden="true">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData}>
+                <CartesianGrid stroke={chartTheme.grid} vertical={false} />
+                <XAxis dataKey="label" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
+                <YAxis stroke={chartTheme.axis} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={chartTooltipStyle} />
+                <Bar
+                  dataKey="value"
+                  fill={chartTheme.current}
+                  radius={[8, 8, 0, 0]}
+                  isAnimationActive={!reduceMotion}
+                  animationDuration={chartAnimationDuration}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartFrame>
+      </Reveal>
     </div>
   );
 }

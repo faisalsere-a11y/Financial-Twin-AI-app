@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { NovaOrb } from "@/components/brand/nova-orb";
+import { AnimatedNumber } from "@/components/motion/animated-number";
 import { motionTokens } from "@/lib/motion/variants";
 import { openCommandPalette } from "@/lib/ui/commands";
 import {
@@ -540,7 +541,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         style={{ "--sidebar-width": `${SIDEBAR_WIDTH_EXPANDED}px` } as ShellOffsetStyle}
         aria-hidden={mobilePresent || undefined}
         inert={mobilePresent || undefined}
-        className="lg:pl-[var(--sidebar-width)]"
+        className="min-w-0 lg:pl-[var(--sidebar-width)]"
       >
         <div className="flex h-[78px] items-center border-b border-border bg-card/80 px-4 backdrop-blur-2xl lg:hidden">
           <Button
@@ -559,10 +560,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <Topbar />
-        <main id="main-content" tabIndex={-1} className="app-print-main subtle-grid relative min-h-[calc(100vh-78px)] overflow-hidden p-4 outline-none lg:p-8">
+        <main id="main-content" tabIndex={-1} className="app-print-main subtle-grid relative min-h-[calc(100vh-78px)] min-w-0 overflow-hidden p-4 outline-none lg:p-8">
           <div className="pointer-events-none absolute right-8 top-8 size-80 rounded-full bg-chart-3/10 blur-3xl" />
           <div className="pointer-events-none absolute bottom-0 left-1/4 size-96 rounded-full bg-positive/[0.08] blur-3xl" />
-          <div className="relative">{children}</div>
+          <div className="relative min-w-0">{children}</div>
         </main>
       </motion.div>
       <button
@@ -578,11 +579,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function MiniMetric({ label, value }: { label: string; value: string }) {
+export interface MiniMetricProps {
+  label: string;
+  value?: string;
+  numericValue?: number;
+  format?: (value: number) => string;
+  suffix?: string;
+}
+
+export function MiniMetric({ label, value, numericValue, format, suffix }: MiniMetricProps) {
   return (
-    <div className="rounded-xl border border-border bg-card/70 px-3 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-black tabular-nums text-foreground">{value}</p>
+    <div className="flex h-full min-w-0 flex-col rounded-xl border border-border bg-card/70 px-3 py-2">
+      <p className="min-w-0 break-words text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-1 text-xs font-black tabular-nums text-foreground sm:text-sm">
+        {numericValue === undefined ? (
+          <span className="min-w-0 break-words">{value}</span>
+        ) : (
+          <AnimatedNumber value={numericValue} format={format} className="max-w-full" />
+        )}
+        {suffix ? <span className="shrink-0 whitespace-nowrap text-[0.82em] text-muted-foreground">{suffix}</span> : null}
+      </p>
     </div>
   );
 }
@@ -599,14 +617,14 @@ export function AppPageHeader({
   eyebrow?: string;
 }) {
   return (
-    <header className="mb-7 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-      <div>
+    <header className="mb-7 flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="min-w-0">
         <p className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-primary">
           <Gauge className="size-4" aria-hidden="true" />
           {eyebrow}
         </p>
-        <h1 className="gradient-text-blue text-3xl font-black tracking-tight md:text-5xl">{title}</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
+        <h1 className="gradient-text-blue break-words text-3xl font-black tracking-tight md:text-5xl">{title}</h1>
+        <p className="mt-3 max-w-2xl break-words text-sm leading-6 text-muted-foreground">{description}</p>
       </div>
       {action}
     </header>
