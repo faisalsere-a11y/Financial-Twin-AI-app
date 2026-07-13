@@ -21,7 +21,7 @@ import { runInvestmentProjection, runMonteCarlo } from "@/lib/financial/investme
 import type { FinancialProfile } from "@/lib/financial/types";
 import { chartTheme, chartTooltipStyle } from "@/lib/presentation/chart-theme";
 import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
-import { formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 const presets = {
   Stocks: { return: 9, volatility: 17, icon: TrendingUp, description: "Broad equity assumption with meaningful year-to-year movement." },
@@ -33,6 +33,7 @@ const presets = {
 };
 
 type AssetType = keyof typeof presets;
+type Preset = (typeof presets)[AssetType];
 const chartAnimationDuration = 420;
 
 const inputSchema = z.object({
@@ -49,6 +50,37 @@ function defaultsForProfile(profile: FinancialProfile): InvestmentInputs {
     monthlyContribution: profile.goals.find((goal) => goal.category === "Retirement")?.monthlyContribution ?? 1200,
     years: 10
   };
+}
+
+function PresetSummary({
+  asset,
+  preset,
+  className
+}: {
+  asset: AssetType;
+  preset: Preset;
+  className?: string;
+}) {
+  const riskLevel = preset.volatility > 25 ? "High" : preset.volatility > 8 ? "Medium" : "Low";
+  const Icon = preset.icon;
+
+  return (
+    <div className={cn("min-w-0 rounded-xl border border-border bg-background/60 p-4", className)}>
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="size-4" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <p className="break-words font-black">{asset}</p>
+          <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{preset.description}</p>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Badge variant="success">Return input {preset.return}%</Badge>
+        <Badge variant={riskLevel === "High" ? "danger" : riskLevel === "Medium" ? "warning" : "blue"}>Volatility {preset.volatility}%</Badge>
+      </div>
+    </div>
+  );
 }
 
 export function InvestmentSimulator() {
@@ -91,8 +123,6 @@ function SubjectInvestmentSimulator({ activeProfile }: { activeProfile: ReturnTy
     () => runMonteCarlo({ ...inputs, annualReturn: preset.return, volatility: preset.volatility, iterations: 400, seed: 1337 }),
     [inputs, preset.return, preset.volatility]
   );
-  const riskLevel = preset.volatility > 25 ? "High" : preset.volatility > 8 ? "Medium" : "Low";
-  const Icon = preset.icon;
   const endingPoint = projection.points.at(-1);
   const projectionSummary = `After ${inputs.years} years, expected value is ${formatCurrency(projection.futureValue, profile.currency)}, with a conservative path of ${formatCurrency(endingPoint?.conservative ?? 0, profile.currency)} and an optimistic path of ${formatCurrency(endingPoint?.optimistic ?? 0, profile.currency)}.`;
   const rangeSummary = `The seeded simulation produces P10 ${formatCurrency(monteCarlo.p10, profile.currency)}, P50 ${formatCurrency(monteCarlo.median, profile.currency)}, and P90 ${formatCurrency(monteCarlo.p90, profile.currency)}.`;
@@ -132,10 +162,20 @@ function SubjectInvestmentSimulator({ activeProfile }: { activeProfile: ReturnTy
               </Select>
             </div>
 
-            <Reveal key={asset} className="min-h-52 min-w-0 rounded-xl border border-border bg-background/60 p-4">
-              <div className="flex min-w-0 items-start gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="size-4" aria-hidden="true" /></span><div className="min-w-0"><p className="break-words font-black">{asset}</p><p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{preset.description}</p></div></div>
-              <div className="mt-4 flex flex-wrap gap-2"><Badge variant="success">Return input {preset.return}%</Badge><Badge variant={riskLevel === "High" ? "danger" : riskLevel === "Medium" ? "warning" : "blue"}>Volatility {preset.volatility}%</Badge></div>
-            </Reveal>
+            <div className="grid min-w-0 grid-cols-1">
+              {Object.entries(presets).map(([item, itemPreset]) => (
+                <div
+                  key={`preset-sizer-${item}`}
+                  aria-hidden="true"
+                  className="invisible pointer-events-none col-start-1 row-start-1 min-w-0"
+                >
+                  <PresetSummary asset={item as AssetType} preset={itemPreset} />
+                </div>
+              ))}
+              <Reveal key={asset} className="col-start-1 row-start-1 h-full min-w-0">
+                <PresetSummary asset={asset} preset={preset} className="h-full" />
+              </Reveal>
+            </div>
 
             <div className="flex flex-col gap-2">
               <Label htmlFor="initialAmount">Initial amount</Label>

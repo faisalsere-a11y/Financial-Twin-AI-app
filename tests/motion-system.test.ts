@@ -3,7 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { AnimatedNumber } from "../components/motion/animated-number";
-import { interpolateNumber } from "../lib/motion/number";
+import * as numberMotion from "../lib/motion/number";
 
 describe("motion foundation", () => {
   const animatedNumber = readFileSync("components/motion/animated-number.tsx", "utf8");
@@ -16,10 +16,26 @@ describe("motion foundation", () => {
   const reveal = readFileSync("components/motion/reveal.tsx", "utf8");
 
   it("clamps number interpolation to the requested range", () => {
-    expect(interpolateNumber(100, 200, -1)).toBe(100);
-    expect(interpolateNumber(100, 200, 0.5)).toBe(150);
-    expect(interpolateNumber(100, 200, 2)).toBe(200);
-    expect(interpolateNumber(200, 100, 0.25)).toBe(175);
+    expect(numberMotion.interpolateNumber(100, 200, -1)).toBe(100);
+    expect(numberMotion.interpolateNumber(100, 200, 0.5)).toBe(150);
+    expect(numberMotion.interpolateNumber(100, 200, 2)).toBe(200);
+    expect(numberMotion.interpolateNumber(200, 100, 0.25)).toBe(175);
+  });
+
+  it("keeps the longest formatted endpoint reserved across descending updates", () => {
+    expect(numberMotion).toHaveProperty("reserveFormattedEndpoint");
+    if (!("reserveFormattedEndpoint" in numberMotion)) return;
+
+    const reserveFormattedEndpoint = numberMotion.reserveFormattedEndpoint as (
+      currentReservation: string,
+      nextEndpoint: string
+    ) => string;
+    let reservation = reserveFormattedEndpoint("SAR 0", "SAR 1,234,567");
+
+    expect(reservation).toBe("SAR 1,234,567");
+    reservation = reserveFormattedEndpoint(reservation, "SAR 42");
+    expect(reservation).toBe("SAR 1,234,567");
+    expect(reserveFormattedEndpoint(reservation, "SAR 12,345,678")).toBe("SAR 12,345,678");
   });
 
   it("wires user motion preferences around the app and route content", () => {
@@ -52,7 +68,9 @@ describe("motion foundation", () => {
 
   it("reserves the final formatted number width without duplicate spoken output", () => {
     expect(animatedNumber).toContain("const finalValue = formatValue(value);");
-    expect(animatedNumber.match(/aria-hidden="true"/g)).toHaveLength(2);
+    expect(animatedNumber).toContain("reserveFormattedEndpoint");
+    expect(animatedNumber).toContain("reservationValue");
+    expect(animatedNumber.match(/aria-hidden="true"/g)).toHaveLength(3);
     expect(animatedNumber.match(/className="sr-only"/g)).toHaveLength(1);
     expect(animatedNumber).toContain('<span className="sr-only">{finalValue}</span>');
   });
@@ -77,10 +95,28 @@ describe("motion foundation", () => {
   it("uses opt-in same-cell grid layers for wrap-safe numbers", () => {
     expect(animatedNumber).toContain("wrap?: boolean");
     expect(animatedNumber).toContain("wrap = false");
-    expect(animatedNumber).toContain("inline-grid min-w-0 max-w-full");
+    expect(animatedNumber).toContain("relative inline-grid min-w-0 max-w-full");
     expect(animatedNumber).toContain("col-start-1 row-start-1 min-w-0 max-w-full");
+    expect(animatedNumber).toContain('const wrapVisualClass = "absolute inset-0 min-w-0 max-w-full"');
     expect(animatedNumber).toContain("[overflow-wrap:anywhere]");
-    expect(animatedNumber).toContain('wrap ? wrapLayerClass : "absolute inset-0"');
+    expect(animatedNumber).toContain('wrap ? wrapVisualClass : "absolute inset-0"');
+  });
+
+  it("server-renders wrap sizers as hidden and the visual layer as non-sizing", () => {
+    const markup = renderToStaticMarkup(
+      createElement(AnimatedNumber, {
+        value: 12_345,
+        from: 0,
+        wrap: true,
+        format: (value) => `SAR ${Math.round(value).toLocaleString("en-US")}`
+      })
+    );
+    const hiddenLayers = markup.match(/<span aria-hidden="true"[^>]*>[^<]*<\/span>/g) ?? [];
+
+    expect(hiddenLayers).toHaveLength(3);
+    expect(hiddenLayers.filter((layer) => layer.includes("invisible"))).toHaveLength(2);
+    expect(hiddenLayers.filter((layer) => layer.includes("absolute inset-0"))).toHaveLength(1);
+    expect(markup.match(/class="sr-only"/g)).toHaveLength(1);
   });
 
   it("uses fast timing for direct hover and press feedback", () => {

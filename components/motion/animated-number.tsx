@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { animate, useMotionValue, useMotionValueEvent, useReducedMotion } from "framer-motion";
+import { reserveFormattedEndpoint } from "@/lib/motion/number";
 import { motionTokens } from "@/lib/motion/variants";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +18,8 @@ type AnimatedNumberProps = Omit<React.HTMLAttributes<HTMLSpanElement>, "children
 };
 
 const useBrowserLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
-const wrapLayerClass = "col-start-1 row-start-1 min-w-0 max-w-full";
+const wrapSizerClass = "col-start-1 row-start-1 min-w-0 max-w-full";
+const wrapVisualClass = "absolute inset-0 min-w-0 max-w-full";
 
 export function AnimatedNumber({
   value,
@@ -73,20 +75,30 @@ export function AnimatedNumber({
     [decimals, format, prefix, suffix]
   );
   const finalValue = formatValue(value);
+  const [reservationValue, setReservationValue] = React.useState(() =>
+    reserveFormattedEndpoint(formatValue(from), finalValue)
+  );
+
+  useBrowserLayoutEffect(() => {
+    setReservationValue((currentReservation) =>
+      reserveFormattedEndpoint(currentReservation, finalValue)
+    );
+  }, [finalValue]);
 
   return (
     <span
       className={cn(
         "tabular-nums",
         wrap
-          ? "inline-grid min-w-0 max-w-full grid-cols-1 whitespace-normal [overflow-wrap:anywhere]"
+          ? "relative inline-grid min-w-0 max-w-full grid-cols-1 whitespace-normal [overflow-wrap:anywhere]"
           : "relative inline-block whitespace-nowrap",
         className
       )}
       {...props}
     >
-      <span aria-hidden="true" className={cn("invisible", wrap && wrapLayerClass)}>{finalValue}</span>
-      <span aria-hidden="true" className={cn(wrap ? wrapLayerClass : "absolute inset-0")}>{formatValue(displayValue)}</span>
+      <span aria-hidden="true" className={cn("invisible", wrap && wrapSizerClass)}>{wrap ? reservationValue : finalValue}</span>
+      {wrap ? <span aria-hidden="true" className={cn("invisible", wrapSizerClass)}>{finalValue}</span> : null}
+      <span aria-hidden="true" className={wrap ? wrapVisualClass : "absolute inset-0"}>{formatValue(displayValue)}</span>
       <span className="sr-only">{finalValue}</span>
     </span>
   );

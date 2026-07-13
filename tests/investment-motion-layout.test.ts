@@ -53,6 +53,19 @@ describe("portfolio motion layout", () => {
     expect(simulator).toContain("<MotionCard");
   });
 
+  it("reserves the maximum intrinsic preset height in one shared grid cell", () => {
+    expect(simulator).toContain("function PresetSummary");
+    expect(simulator).toContain("Object.entries(presets).map");
+    expect(simulator).toContain('className="grid min-w-0 grid-cols-1"');
+    expect(simulator).toMatch(
+      /aria-hidden="true"[\s\S]*?className="invisible pointer-events-none col-start-1 row-start-1 min-w-0"[\s\S]*?<PresetSummary/
+    );
+    expect(simulator).toMatch(
+      /<Reveal key=\{asset\} className="col-start-1 row-start-1 h-full min-w-0"[\s\S]*?<PresetSummary[\s\S]*?className="h-full"/
+    );
+    expect(simulator).not.toContain("min-h-52");
+  });
+
   it("preserves deterministic inputs and active-account revision boundaries", () => {
     expect(compactSimulator).toContain(
       "runInvestmentProjection({ ...inputs, annualReturn: preset.return, volatility: preset.volatility })"
