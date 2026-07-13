@@ -160,9 +160,11 @@ const HISTORY_KEYWORDS = [
   "purchase",
   "purchases",
   "bought",
+  "today",
   "this month",
   "last month",
   "past month",
+  "this week",
   "last week",
   "yesterday",
   "recent activity",
@@ -181,9 +183,11 @@ const HISTORY_KEYWORDS = [
   "week to date",
   "year to date",
   "current year",
+  "this year",
   "last year",
   "past year",
   "current quarter",
+  "this quarter",
   "last quarter",
   "past quarter",
   "previous month"
@@ -241,27 +245,24 @@ const DATED_OUTFLOW_PHRASES = [
   "payments made"
 ] as const;
 
-const DATED_ACTIVITY_KEYWORDS = [
-  "did",
-  "expense",
-  "expenses",
-  "spend",
-  "spending",
-  "spent",
-  "pay",
-  "paid",
-  "transaction",
-  "transactions",
-  "merchant",
-  "merchants",
-  "purchase",
-  "purchases",
-  "portfolio",
-  "investment",
-  "investments",
-  "return",
-  "returns",
-  "performance"
+const GENERAL_FINANCIAL_HISTORY_KEYWORDS = [
+  "income",
+  "salary",
+  "paycheck",
+  "asset",
+  "assets",
+  "cash",
+  "balance",
+  "balances",
+  "saving",
+  "savings",
+  "wealth",
+  "financial snapshot"
+] as const;
+
+const FINANCIAL_HISTORY_KEYWORDS = [
+  ...INTENT_KEYWORDS.flatMap((group) => group.keywords),
+  ...GENERAL_FINANCIAL_HISTORY_KEYWORDS
 ] as const;
 
 const EXPENSE_LABELS: Record<keyof ExpenseModel, string> = {
@@ -288,7 +289,7 @@ function normalizeMessage(message: string) {
 
   return value
     .normalize("NFKD")
-    .replace(/[’‘‛ʼ＇']/g, "")
+    .replace(/[’‘‛ʼ＇']/g, " ")
     .replace(/\p{M}+/gu, "")
     .toLowerCase()
     .replace(/[\p{P}\p{S}_]+/gu, " ")
@@ -323,16 +324,19 @@ function isHistoryRequest(normalized: string) {
     );
     const hasPastCue = PAST_DATE_CUES.some((cue) => containsKeyword(normalized, cue));
     const hasDay = new RegExp(`(?:^|\\s)${month}\\s+\\d{1,2}(?:\\s|$)`).test(normalized);
+    const hasPossessiveMarker = containsKeyword(normalized, `${month} s`);
     const hasAdjacentActivity = AMBIGUOUS_MONTH_ACTIVITY_TERMS.some(
       (activity) =>
         containsKeyword(normalized, `${month} ${activity}`) ||
         containsKeyword(normalized, `${activity} ${month}`)
     );
-    return hasDatePreposition || hasPastCue || hasDay || hasAdjacentActivity;
+    return hasDatePreposition || hasPastCue || hasDay || hasPossessiveMarker || hasAdjacentActivity;
   });
   const hasCalendarYear = /(?:^|\s)(?:19|20)\d{2}(?:\s|$)/.test(normalized);
-  const hasDatedActivity = DATED_ACTIVITY_KEYWORDS.some((keyword) => containsKeyword(normalized, keyword));
-  return (hasNamedMonth || hasCalendarYear) && hasDatedActivity;
+  const hasFinancialSubject = FINANCIAL_HISTORY_KEYWORDS.some((keyword) =>
+    containsKeyword(normalized, keyword)
+  );
+  return (hasNamedMonth || hasCalendarYear) && hasFinancialSubject;
 }
 
 function isDatedSpendingOutflow(normalized: string) {
@@ -357,6 +361,27 @@ function finiteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function nonNegativeNumber(value: unknown): number | null {
+  const finite = finiteNumber(value);
+  if (finite === null || finite < 0) return null;
+  return finite === 0 ? 0 : finite;
+}
+
+function positiveNumber(value: unknown): number | null {
+  const finite = finiteNumber(value);
+  return finite !== null && finite > 0 ? finite : null;
+}
+
+function neutralizedNonNegativeNumber(value: unknown): number | null {
+  const finite = finiteNumber(value);
+  return finite === null ? null : Math.max(0, finite);
+}
+
+function boundedScore(value: unknown): number | null {
+  const finite = finiteNumber(value);
+  return finite === null ? null : Math.min(100, Math.max(0, finite));
+}
+
 function numberToken(value: unknown) {
   const finite = finiteNumber(value);
   return finite === null ? "unavailable" : String(finite);
@@ -373,14 +398,22 @@ function safeCurrency(value: unknown, currency: FinancialProfile["currency"]) {
   }
 }
 
+function safeNonNegativeCurrency(value: unknown, currency: FinancialProfile["currency"]) {
+  return safeCurrency(nonNegativeNumber(value), currency);
+}
+
 function safePercent(value: unknown, digits = 0) {
   const finite = finiteNumber(value);
   return finite === null ? "Unavailable" : formatPercent(finite, digits);
 }
 
+function safeNonNegativePercent(value: unknown, digits = 0) {
+  return safePercent(nonNegativeNumber(value), digits);
+}
+
 function safeScore(value: unknown) {
-  const finite = finiteNumber(value);
-  return finite === null ? "Unavailable" : `${Math.round(finite)}/100`;
+  const score = boundedScore(value);
+  return score === null ? "Unavailable" : `${Math.round(score)}/100`;
 }
 
 function safePlainText(value: unknown, fallback: string) {
@@ -398,8 +431,8 @@ function safeMarkdownText(value: unknown, fallback: string) {
     .replace(/([*_{}\[\]()#+.!|])/g, "\\$1");
 }
 
-function sumFinite(values: unknown[]) {
-  const numbers = values.map(finiteNumber);
+function sumNonNegative(values: unknown[]) {
+  const numbers = values.map(nonNegativeNumber);
   if (numbers.some((value) => value === null)) return null;
   const sum = (numbers as number[]).reduce((total, value) => total + value, 0);
   return Number.isFinite(sum) ? sum : null;
@@ -447,7 +480,7 @@ function introduction(normalized: string, subject: string) {
 }
 
 function historyBoundary() {
-  return "No transaction feed is connected, so I cannot verify dated purchases, merchants, or what happened in a particular month. The model also has no dated market-performance history; the figures below are modeled balances and monthly inputs, not observed activity.";
+  return "No transaction feed is connected, so I cannot verify dated purchases, merchants, or historical financial values. The model also has no dated market-performance history. Each figure below is part of the current model snapshot, not a value from the requested date or observed activity.";
 }
 
 function ensureHistoryBoundary(markdown: string, normalized: string) {
@@ -467,7 +500,7 @@ function spendingContent(request: NovaChatRequest, normalized: string): Response
   const { profile, twin } = request;
   const categories = (Object.keys(EXPENSE_LABELS) as Array<keyof ExpenseModel>).map((key) => ({
     label: EXPENSE_LABELS[key],
-    value: finiteNumber(profile.expenses[key])
+    value: nonNegativeNumber(profile.expenses[key])
   }));
   const largest = categories.reduce<(typeof categories)[number] | null>((current, category) => {
     if (category.value === null || category.value <= 0) return current;
@@ -477,7 +510,7 @@ function spendingContent(request: NovaChatRequest, normalized: string): Response
   const evidence: NovaEvidence[] = [
     {
       label: "Modeled monthly expenses",
-      value: safeCurrency(twin.monthlyExpenses, profile.currency),
+      value: safeNonNegativeCurrency(twin.monthlyExpenses, profile.currency),
       detail: "Supplied financial-twin total; this is not observed transaction activity."
     },
     ...(largest
@@ -485,7 +518,7 @@ function spendingContent(request: NovaChatRequest, normalized: string): Response
           {
             label: "Largest modeled category",
             value: largest.label,
-            detail: `${safeCurrency(largest.value, profile.currency)} in the supplied expense model.`
+            detail: `${safeNonNegativeCurrency(largest.value, profile.currency)} in the supplied expense model.`
           }
         ]
       : []),
@@ -496,8 +529,8 @@ function spendingContent(request: NovaChatRequest, normalized: string): Response
     }
   ];
   const categorySentence = largest
-    ? `The **modeled monthly expenses** total **${safeCurrency(twin.monthlyExpenses, profile.currency)}**. The largest positive category is **${largest.label}** at **${safeCurrency(largest.value, profile.currency)}**.`
-    : `The **modeled monthly expenses** total **${safeCurrency(twin.monthlyExpenses, profile.currency)}**. There are no positive expense categories to rank, so I will not name a largest item.`;
+    ? `The **modeled monthly expenses** total **${safeNonNegativeCurrency(twin.monthlyExpenses, profile.currency)}**. The largest positive category is **${largest.label}** at **${safeNonNegativeCurrency(largest.value, profile.currency)}**.`
+    : `The **modeled monthly expenses** total **${safeNonNegativeCurrency(twin.monthlyExpenses, profile.currency)}**. There are no positive expense categories to rank, so I will not name a largest item.`;
   const paragraphs = [
     introduction(normalized, "your spending model"),
     ...(isHistoryRequest(normalized) ? [historyBoundary()] : []),
@@ -535,9 +568,9 @@ function spendingContent(request: NovaChatRequest, normalized: string): Response
 
 function investmentContent(request: NovaChatRequest, normalized: string): ResponseContent {
   const { profile } = request;
-  const investmentAssets = finiteNumber(profile.assets.investments);
-  const retirementAssets = finiteNumber(profile.assets.retirement);
-  const investedTotal = sumFinite([profile.assets.investments, profile.assets.retirement]);
+  const investmentAssets = nonNegativeNumber(profile.assets.investments);
+  const retirementAssets = nonNegativeNumber(profile.assets.retirement);
+  const investedTotal = sumNonNegative([profile.assets.investments, profile.assets.retirement]);
   const hasPositiveInvestment =
     (investmentAssets !== null && investmentAssets > 0) ||
     (retirementAssets !== null && retirementAssets > 0);
@@ -546,7 +579,7 @@ function investmentContent(request: NovaChatRequest, normalized: string): Respon
     introduction(normalized, "your investment balances"),
     ...(isHistoryRequest(normalized) ? [historyBoundary()] : []),
     hasPositiveInvestment
-      ? `The supplied investment and retirement buckets total **${safeCurrency(investedTotal, profile.currency)}**: **${safeCurrency(investmentAssets, profile.currency)}** in investment assets and **${safeCurrency(retirementAssets, profile.currency)}** in retirement assets.`
+      ? `The supplied investment and retirement buckets total **${safeNonNegativeCurrency(investedTotal, profile.currency)}**: **${safeNonNegativeCurrency(investmentAssets, profile.currency)}** in investment assets and **${safeNonNegativeCurrency(retirementAssets, profile.currency)}** in retirement assets.`
       : "No positive amount is modeled in the investment or retirement asset buckets.",
     `Your supplied risk tolerance is **${safeMarkdownText(riskTolerance, "Unavailable")}**. These balances describe allocation only; they do not establish past or future returns.`
   ];
@@ -557,17 +590,17 @@ function investmentContent(request: NovaChatRequest, normalized: string): Respon
     evidence: [
       {
         label: "Investment assets",
-        value: safeCurrency(investmentAssets, profile.currency),
+        value: safeNonNegativeCurrency(investmentAssets, profile.currency),
         detail: "Supplied profile investment bucket."
       },
       {
         label: "Retirement assets",
-        value: safeCurrency(retirementAssets, profile.currency),
+        value: safeNonNegativeCurrency(retirementAssets, profile.currency),
         detail: "Supplied profile retirement bucket."
       },
       {
         label: "Invested total",
-        value: safeCurrency(investedTotal, profile.currency),
+        value: safeNonNegativeCurrency(investedTotal, profile.currency),
         detail: "Investment assets plus retirement assets from the supplied profile."
       },
       {
@@ -594,13 +627,14 @@ function priorityRank(goal: GoalModel) {
 function selectGoal(goals: GoalModel[], normalized: string): GoalModel | null {
   let selected: GoalModel | null = null;
   let selectedScore = -1;
+  const validGoals = goals.filter((goal) => positiveNumber(goal.targetAmount) !== null);
 
-  goals.forEach((goal, index) => {
+  validGoals.forEach((goal, index) => {
     const normalizedName = normalizeMessage(goal.name);
     const normalizedCategory = normalizeMessage(goal.category);
     const nameMatch = normalizedName && containsKeyword(normalized, normalizedName) ? 20 : 0;
     const categoryMatch = normalizedCategory && containsKeyword(normalized, normalizedCategory) ? 10 : 0;
-    const score = nameMatch + categoryMatch + priorityRank(goal) - index / Math.max(1, goals.length * 10);
+    const score = nameMatch + categoryMatch + priorityRank(goal) - index / Math.max(1, validGoals.length * 10);
 
     if (score > selectedScore) {
       selected = goal;
@@ -616,15 +650,24 @@ function goalContent(request: NovaChatRequest, normalized: string): ResponseCont
   const goal = selectGoal(profile.goals, normalized);
 
   if (!goal) {
+    const hasInvalidGoals = profile.goals.length > 0;
     return {
       title: "Goal progress",
       markdown: [
         introduction(normalized, "your goals"),
-        "No goals are modeled in this profile, so there is no goal to rank or forecast.",
+        hasInvalidGoals
+          ? "No valid goals are modeled in this profile. Every supplied goal needs a finite positive target before it can be ranked or forecast."
+          : "No goals are modeled in this profile, so there is no goal to rank or forecast.",
         cashFlowSentence(twin.monthlySurplus, profile.currency)
       ].join("\n\n"),
       evidence: [
-        { label: "Goals", value: "None modeled", detail: "The supplied goal list is empty." },
+        {
+          label: "Goals",
+          value: hasInvalidGoals ? "None valid" : "None modeled",
+          detail: hasInvalidGoals
+            ? "Supplied goals with nonpositive or nonfinite targets were omitted."
+            : "The supplied goal list is empty."
+        },
         {
           label: "Monthly surplus",
           value: safeCurrency(twin.monthlySurplus, profile.currency),
@@ -640,9 +683,9 @@ function goalContent(request: NovaChatRequest, normalized: string): ResponseCont
     };
   }
 
-  const target = finiteNumber(goal.targetAmount);
-  const current = finiteNumber(goal.currentAmount);
-  const contribution = finiteNumber(goal.monthlyContribution);
+  const target = positiveNumber(goal.targetAmount);
+  const current = neutralizedNonNegativeNumber(goal.currentAmount);
+  const contribution = neutralizedNonNegativeNumber(goal.monthlyContribution);
   const completed = target !== null && target > 0 && current !== null && current >= target;
   const remaining = target !== null && current !== null ? Math.max(0, target - current) : null;
   const rawProgress = target !== null && target > 0 && current !== null ? (current / target) * 100 : null;
@@ -656,23 +699,23 @@ function goalContent(request: NovaChatRequest, normalized: string): ResponseCont
   const markdownGoalName = safeMarkdownText(goal.name, "Selected goal");
   const timeValue = completed ? "Complete" : months === null ? "Not estimable" : `${months} months`;
   const fundingSentence = completed
-    ? `This goal is already funded in the supplied profile; the remaining modeled amount is **${safeCurrency(0, profile.currency)}**.`
+    ? `This goal is already funded in the supplied profile; the remaining modeled amount is **${safeNonNegativeCurrency(0, profile.currency)}**.`
     : months !== null
-      ? `At the supplied monthly contribution of **${safeCurrency(contribution, profile.currency)}**, the remaining **${safeCurrency(remaining, profile.currency)}** takes about **${months} months**. This is deterministic remaining-amount math, not a dated forecast.`
+      ? `At the supplied monthly contribution of **${safeNonNegativeCurrency(contribution, profile.currency)}**, the remaining **${safeNonNegativeCurrency(remaining, profile.currency)}** takes about **${months} months**. This is deterministic remaining-amount math, not a dated forecast.`
       : "A finite positive monthly contribution is not supplied, so a completion time cannot be estimated without inventing an assumption.";
 
   return {
     title: "Goal progress",
     markdown: [
       introduction(normalized, "your goal progress"),
-      `For **${markdownGoalName}**, the profile has **${safeCurrency(current, profile.currency)}** toward **${safeCurrency(target, profile.currency)}** (${safePercent(progress)}).`,
+      `For **${markdownGoalName}**, the profile has **${safeNonNegativeCurrency(current, profile.currency)}** toward **${safeNonNegativeCurrency(target, profile.currency)}** (${safeNonNegativePercent(progress)}).`,
       fundingSentence,
       cashFlowSentence(twin.monthlySurplus, profile.currency)
     ].join("\n\n"),
     evidence: [
       {
         label: "Goal progress",
-        value: safePercent(progress),
+        value: safeNonNegativePercent(progress),
         detail: `${goalName}: supplied current amount divided by supplied target amount.`
       },
       {
@@ -680,12 +723,12 @@ function goalContent(request: NovaChatRequest, normalized: string): ResponseCont
         value:
           current === null || target === null
             ? "Unavailable"
-            : `${safeCurrency(current, profile.currency)} of ${safeCurrency(target, profile.currency)}`,
+            : `${safeNonNegativeCurrency(current, profile.currency)} of ${safeNonNegativeCurrency(target, profile.currency)}`,
         detail: goalName
       },
       {
         label: "Remaining",
-        value: safeCurrency(remaining, profile.currency),
+        value: safeNonNegativeCurrency(remaining, profile.currency),
         detail: "Target amount less current amount, floored at zero."
       },
       {
@@ -695,7 +738,7 @@ function goalContent(request: NovaChatRequest, normalized: string): ResponseCont
           ? "The supplied current amount meets or exceeds the target."
           : months === null
             ? "A finite positive contribution is required for a month estimate."
-            : `Remaining amount divided by the supplied ${safeCurrency(contribution, profile.currency)} monthly contribution.`
+            : `Remaining amount divided by the supplied ${safeNonNegativeCurrency(contribution, profile.currency)} monthly contribution.`
       }
     ],
     followUps: [
@@ -709,50 +752,78 @@ function goalContent(request: NovaChatRequest, normalized: string): ResponseCont
 
 function debtContent(request: NovaChatRequest, normalized: string): ResponseContent {
   const { profile, twin } = request;
-  const totalDebt = sumFinite(profile.debts.map((debt) => debt.balance));
-  const highestAprDebt = profile.debts.reduce<(typeof profile.debts)[number] | null>((highest, debt) => {
-    const apr = finiteNumber(debt.apr);
-    if (apr === null) return highest;
-    const highestApr = highest ? finiteNumber(highest.apr) : null;
-    return highestApr === null || apr > highestApr ? debt : highest;
+  const validDebts = profile.debts.filter(
+    (debt) =>
+      nonNegativeNumber(debt.balance) !== null &&
+      nonNegativeNumber(debt.monthlyPayment) !== null &&
+      nonNegativeNumber(debt.apr) !== null
+  );
+  const invalidDebtCount = profile.debts.length - validDebts.length;
+  const accountCount = validDebts.length;
+  const totalDebt = accountCount
+    ? sumNonNegative(validDebts.map((debt) => debt.balance))
+    : profile.debts.length
+      ? null
+      : 0;
+  const monthlyDebtPayment = accountCount
+    ? sumNonNegative(validDebts.map((debt) => debt.monthlyPayment))
+    : profile.debts.length
+      ? null
+      : 0;
+  const debtRatio = invalidDebtCount ? null : nonNegativeNumber(twin.debtRatio);
+  const highestAprDebt = validDebts.reduce<(typeof validDebts)[number] | null>((highest, debt) => {
+    if (!highest) return debt;
+    return debt.apr > highest.apr ? debt : highest;
   }, null);
-  const accountCount = profile.debts.length;
+  const invalidDebtDetail = invalidDebtCount
+    ? ` ${invalidDebtCount} invalid debt row${invalidDebtCount === 1 ? " was" : "s were"} omitted.`
+    : "";
   const evidence: NovaEvidence[] = [
     {
       label: "Total debt balance",
-      value: safeCurrency(totalDebt, profile.currency),
+      value: safeNonNegativeCurrency(totalDebt, profile.currency),
       detail: accountCount
-        ? `Sum of ${accountCount} supplied debt balance${accountCount === 1 ? "" : "s"}.`
-        : "No debt accounts are listed in the supplied profile."
+        ? `Sum of ${accountCount} valid supplied debt balance${accountCount === 1 ? "" : "s"}.${invalidDebtDetail}`
+        : profile.debts.length
+          ? `All supplied debt rows were invalid and omitted.${invalidDebtDetail}`
+          : "No debt accounts are listed in the supplied profile."
     },
     {
       label: "Monthly debt payments",
-      value: safeCurrency(twin.monthlyDebtPayment, profile.currency),
-      detail: "Supplied financial-twin monthly debt-payment total."
+      value: safeNonNegativeCurrency(monthlyDebtPayment, profile.currency),
+      detail: accountCount
+        ? `Sum of monthly payments from valid supplied debt rows.${invalidDebtDetail}`
+        : "No valid debt-payment total is available."
     },
     {
       label: "Debt payment ratio",
-      value: safePercent(twin.debtRatio, 1),
-      detail: "Supplied financial-twin debt-payment ratio."
+      value: safeNonNegativePercent(debtRatio, 1),
+      detail: invalidDebtCount
+        ? "Unavailable because invalid debt rows were omitted from the evidence."
+        : "Supplied financial-twin debt-payment ratio."
     },
     ...(highestAprDebt
       ? [
           {
             label: "Highest APR",
-            value: safePercent(highestAprDebt.apr, 1),
+            value: safeNonNegativePercent(highestAprDebt.apr, 1),
             detail: `${safePlainText(highestAprDebt.label, "Debt account")} in the supplied debt list.`
           }
         ]
       : [])
   ];
   const debtSummary = accountCount
-    ? `The supplied debt list totals **${safeCurrency(totalDebt, profile.currency)}** across **${accountCount}** account${accountCount === 1 ? "" : "s"}, with **${safeCurrency(twin.monthlyDebtPayment, profile.currency)}** in modeled monthly payments.`
-    : "No debt accounts are modeled in the supplied profile, so there is no balance or APR to rank.";
+    ? `The valid supplied debt rows total **${safeNonNegativeCurrency(totalDebt, profile.currency)}** across **${accountCount}** account${accountCount === 1 ? "" : "s"}, with **${safeNonNegativeCurrency(monthlyDebtPayment, profile.currency)}** in monthly payments.${invalidDebtDetail}`
+    : profile.debts.length
+      ? `No valid debt accounts are available. All **${profile.debts.length}** supplied debt row${profile.debts.length === 1 ? " was" : "s were"} invalid and omitted, so no balance or APR is ranked.`
+      : "No debt accounts are modeled in the supplied profile, so there is no balance or APR to rank.";
   const aprSummary = highestAprDebt
-    ? `The highest listed APR is **${safePercent(highestAprDebt.apr, 1)}** on **${safeMarkdownText(highestAprDebt.label, "Debt account")}**. The modeled debt-payment ratio is **${safePercent(twin.debtRatio, 1)}**.`
+    ? `The highest valid listed APR is **${safeNonNegativePercent(highestAprDebt.apr, 1)}** on **${safeMarkdownText(highestAprDebt.label, "Debt account")}**. The modeled debt-payment ratio is **${safeNonNegativePercent(debtRatio, 1)}**.`
     : accountCount
       ? "No finite APR is available in the supplied debt list, so I will not name a highest-rate account."
-      : "The modeled monthly debt-payment total and ratio are both shown as supplied by the twin.";
+      : profile.debts.length
+        ? "Invalid debt rows are not used for totals, payment evidence, ratios, or APR rankings."
+        : "The modeled monthly debt-payment total and ratio are both shown as supplied by the twin.";
   const followUps = highestAprDebt
     ? [
         "Which modeled debt has the highest APR?",
@@ -784,7 +855,7 @@ function debtContent(request: NovaChatRequest, normalized: string): ResponseCont
 
 function healthEvidence(request: NovaChatRequest): NovaEvidence[] {
   const { profile, twin } = request;
-  const riskScore = finiteNumber(twin.risk.score);
+  const riskScore = boundedScore(twin.risk.score);
   const riskLevel = safePlainText(twin.risk.level, "Unavailable");
 
   return [
@@ -813,7 +884,7 @@ function healthEvidence(request: NovaChatRequest): NovaEvidence[] {
 
 function healthContent(request: NovaChatRequest, normalized: string): ResponseContent {
   const { profile, twin } = request;
-  const score = finiteNumber(twin.financialHealth.score);
+  const score = boundedScore(twin.financialHealth.score);
   const scoreSentence =
     score === null
       ? "The supplied financial-health score is unavailable, so I will not substitute or estimate one."

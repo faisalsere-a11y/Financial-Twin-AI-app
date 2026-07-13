@@ -216,6 +216,35 @@ describe("deterministic Nova chat", () => {
     expect(response.markdown).toMatch(/not observed activity|cannot verify/i);
   });
 
+  it.each<[string, NovaChatIntent]>([
+    ["What was my net worth in June?", "health"],
+    ["What was my debt balance in 2024?", "debt"],
+    ["Show last month’s spending", "spending"],
+    ["Show June's portfolio", "investments"],
+    ["What was my house goal progress in June?", "goals"],
+    ["What was my financial health in 2024?", "health"],
+    ["What was my monthly surplus in June?", "health"],
+    ["What was my income in June?", "general"],
+    ["What's my debt balance in June?", "debt"],
+    ["How’s my financial health in June?", "health"],
+    ["Show March's financial health", "health"],
+    ["Show May's income", "general"],
+    ["Show March’s house goal progress", "goals"],
+    ["Show May’s monthly surplus", "health"],
+    ["How much did I spend today?", "spending"],
+    ["How much did I spend this week?", "spending"],
+    ["What is my net worth today?", "health"],
+    ["What was my income this year?", "general"],
+    ["Show my portfolio this quarter", "investments"]
+  ])("discloses that dated %s evidence is a current snapshot", (message, intent) => {
+    const response = createNovaResponse({ message, profile: sampleProfile, twin });
+
+    expect(response.intent).toBe(intent);
+    expect(response.markdown).toMatch(/no transaction feed is connected/i);
+    expect(response.markdown).toMatch(/current model snapshot/i);
+    expect(response.markdown).toMatch(/not (?:a )?value from the requested date/i);
+  });
+
   it.each([
     "What return did my investment portfolio make last month?",
     "How did my investment portfolio do in 2024?",
@@ -436,6 +465,235 @@ describe("deterministic Nova chat", () => {
     expect(evidenceValue(goals, "Time at current contribution")).toBe("Complete");
     expect(goals.markdown).toMatch(/already funded|complete/i);
     expect(responseText(health) + responseText(goals)).not.toMatch(/\bNaN\b|\bInfinity\b|∞/);
+  });
+
+  it("omits debt rows with negative balances, payments, or APRs from evidence and rankings", () => {
+    const profile = zeroProfile();
+    profile.income.salaryMonthly = 10_000;
+    profile.debts = [
+      {
+        label: "Invalid balance",
+        balance: -5_000,
+        monthlyPayment: 200,
+        apr: 5,
+        type: "personal-loan"
+      },
+      {
+        label: "Invalid payment",
+        balance: 6_000,
+        monthlyPayment: -100,
+        apr: 9,
+        type: "credit-card"
+      },
+      {
+        label: "Invalid APR",
+        balance: 7_000,
+        monthlyPayment: 100,
+        apr: -4,
+        type: "education"
+      },
+      {
+        label: "Valid loan",
+        balance: 8_000,
+        monthlyPayment: 300,
+        apr: 6,
+        type: "auto-loan"
+      }
+    ];
+    const invalidTwin = calculateFinancialTwin(profile);
+    const response = createNovaResponse({ message: "Review my debt", profile, twin: invalidTwin });
+
+    expect(evidenceValue(response, "Total debt balance")).toBe(formatCurrency(8_000, profile.currency));
+    expect(evidenceValue(response, "Monthly debt payments")).toBe(formatCurrency(300, profile.currency));
+    expect(evidenceValue(response, "Debt payment ratio")).toBe("Unavailable");
+    expect(evidenceValue(response, "Highest APR")).toBe(formatPercent(6, 1));
+    expect(response.markdown).toContain("Valid loan");
+    expect(response.markdown).not.toMatch(/Invalid balance|Invalid payment|Invalid APR/);
+    expect(responseText(response)).not.toMatch(/-SAR|SAR\s*-\d|-\d+(?:\.\d+)?%/);
+  });
+
+  it("uses an honest unavailable debt path when every supplied row is invalid", () => {
+    const profile = zeroProfile();
+    profile.income.salaryMonthly = 5_000;
+    profile.debts = [
+      {
+        label: "Invalid debt",
+        balance: -500,
+        monthlyPayment: -50,
+        apr: -3,
+        type: "credit-card"
+      }
+    ];
+    const invalidTwin = calculateFinancialTwin(profile);
+    const response = createNovaResponse({ message: "Review my debt", profile, twin: invalidTwin });
+
+    expect(evidenceValue(response, "Total debt balance")).toBe("Unavailable");
+    expect(evidenceValue(response, "Monthly debt payments")).toBe("Unavailable");
+    expect(evidenceValue(response, "Debt payment ratio")).toBe("Unavailable");
+    expect(response.evidence.some((item) => item.label === "Highest APR")).toBe(false);
+    expect(response.markdown).toMatch(/no valid debt accounts|invalid debt/i);
+    expect(response.followUps.join(" ")).not.toMatch(/highest apr/i);
+    expect(responseText(response)).not.toMatch(/-SAR|SAR\s*-\d|-\d+(?:\.\d+)?%/);
+  });
+
+  it("skips nonpositive goal targets and neutralizes negative current amounts and contributions", () => {
+    const profile = zeroProfile();
+    profile.goals = [
+      {
+        id: "invalid-target",
+        name: "Invalid target",
+        category: "House",
+        targetAmount: -1_000,
+        currentAmount: 500,
+        monthlyContribution: 100,
+        targetDate: "2028-01-01",
+        priority: "High"
+      },
+      {
+        id: "sanitized-goal",
+        name: "Sanitized goal",
+        category: "Emergency",
+        targetAmount: 1_000,
+        currentAmount: -200,
+        monthlyContribution: -50,
+        targetDate: "2028-01-01",
+        priority: "Medium"
+      }
+    ];
+    const invalidTwin = calculateFinancialTwin(profile);
+    const response = createNovaResponse({ message: "Review my goals", profile, twin: invalidTwin });
+
+    expect(response.markdown).toContain("Sanitized goal");
+    expect(response.markdown).not.toContain("Invalid target");
+    expect(evidenceValue(response, "Goal progress")).toBe("0%");
+    expect(evidenceValue(response, "Current amount")).toBe(
+      `${formatCurrency(0, profile.currency)} of ${formatCurrency(1_000, profile.currency)}`
+    );
+    expect(evidenceValue(response, "Remaining")).toBe(formatCurrency(1_000, profile.currency));
+    expect(evidenceValue(response, "Time at current contribution")).toBe("Not estimable");
+    expect(responseText(response)).not.toMatch(/-SAR|SAR\s*-\d/);
+  });
+
+  it("uses an honest empty goal path when every target is invalid", () => {
+    const profile = zeroProfile();
+    profile.goals = [
+      {
+        id: "zero-target",
+        name: "Zero target",
+        category: "Emergency",
+        targetAmount: 0,
+        currentAmount: -100,
+        monthlyContribution: -20,
+        targetDate: "2028-01-01",
+        priority: "High"
+      },
+      {
+        id: "negative-target",
+        name: "Negative target",
+        category: "House",
+        targetAmount: -500,
+        currentAmount: 100,
+        monthlyContribution: 10,
+        targetDate: "2028-01-01",
+        priority: "Medium"
+      }
+    ];
+    const invalidTwin = calculateFinancialTwin(profile);
+    const response = createNovaResponse({ message: "Review my goals", profile, twin: invalidTwin });
+
+    expect(response.markdown).toMatch(/no valid goals are modeled/i);
+    expect(response.markdown).not.toMatch(/Zero target|Negative target/);
+    expect(response.evidence.some((item) => item.label === "Goal progress")).toBe(false);
+    expect(response.followUps).toHaveLength(4);
+    expect(responseText(response)).not.toMatch(/-SAR|SAR\s*-\d/);
+  });
+
+  it("rejects negative expense and investment evidence while preserving legitimate negative cash flow", () => {
+    const profile = zeroProfile();
+    profile.expenses.housing = -400;
+    profile.assets.investments = -1_000;
+    profile.assets.retirement = -2_000;
+    profile.assets.cash = -500;
+    const invalidTwin: FinancialTwinResult = {
+      ...twin,
+      profile,
+      monthlyIncome: -100,
+      monthlyExpenses: -400,
+      monthlyDebtPayment: -50,
+      monthlySurplus: -750,
+      debtRatio: -25,
+      savingsRate: -35,
+      emergencyFundMonths: -2,
+      netWorth: -10_000,
+      risk: { ...twin.risk, score: 140 },
+      financialHealth: { ...twin.financialHealth, score: -20 },
+      timeline: []
+    };
+    const spending = createNovaResponse({ message: "Review my spending", profile, twin: invalidTwin });
+    const investments = createNovaResponse({ message: "Review my investments", profile, twin: invalidTwin });
+    const health = createNovaResponse({ message: "Review my financial health", profile, twin: invalidTwin });
+
+    expect(evidenceValue(spending, "Modeled monthly expenses")).toBe("Unavailable");
+    expect(spending.evidence.some((item) => item.label === "Largest modeled category")).toBe(false);
+    expect(evidenceValue(investments, "Investment assets")).toBe("Unavailable");
+    expect(evidenceValue(investments, "Retirement assets")).toBe("Unavailable");
+    expect(evidenceValue(investments, "Invested total")).toBe("Unavailable");
+    expect(
+      [
+        evidenceValue(spending, "Modeled monthly expenses"),
+        evidenceValue(investments, "Investment assets"),
+        evidenceValue(investments, "Retirement assets"),
+        evidenceValue(investments, "Invested total")
+      ].join(" ")
+    ).not.toMatch(/-SAR|SAR\s*-\d/);
+    expect(evidenceValue(health, "Financial health")).toBe("0/100");
+    expect(evidenceValue(health, "Risk")).toBe(`${invalidTwin.risk.level} (100/100)`);
+    expect(evidenceValue(health, "Net worth")).toBe(formatCurrency(-10_000, profile.currency));
+    expect(evidenceValue(health, "Monthly surplus")).toBe(formatCurrency(-750, profile.currency));
+    expect(invalidTwin.savingsRate).toBe(-35);
+  });
+
+  it("bounds high health and negative risk scores without changing negative net worth or surplus", () => {
+    const profile = zeroProfile();
+    const invalidTwin: FinancialTwinResult = {
+      ...twin,
+      profile,
+      monthlySurplus: -250,
+      savingsRate: -10,
+      netWorth: -1_500,
+      risk: { ...twin.risk, score: -40 },
+      financialHealth: { ...twin.financialHealth, score: 180 }
+    };
+    const response = createNovaResponse({ message: "Review my financial health", profile, twin: invalidTwin });
+
+    expect(evidenceValue(response, "Financial health")).toBe("100/100");
+    expect(evidenceValue(response, "Risk")).toBe(`${invalidTwin.risk.level} (0/100)`);
+    expect(evidenceValue(response, "Net worth")).toBe(formatCurrency(-1_500, profile.currency));
+    expect(evidenceValue(response, "Monthly surplus")).toBe(formatCurrency(-250, profile.currency));
+    expect(invalidTwin.savingsRate).toBe(-10);
+  });
+
+  it("canonicalizes negative zero in nonnegative evidence without changing signed cash flow", () => {
+    const profile = zeroProfile();
+    profile.assets.investments = -0;
+    profile.assets.retirement = -0;
+    const invalidTwin: FinancialTwinResult = {
+      ...twin,
+      profile,
+      monthlyExpenses: -0,
+      monthlySurplus: -250,
+      netWorth: -1_500
+    };
+    const spending = createNovaResponse({ message: "Review my spending", profile, twin: invalidTwin });
+    const investments = createNovaResponse({ message: "Review my investments", profile, twin: invalidTwin });
+    const health = createNovaResponse({ message: "Review my financial health", profile, twin: invalidTwin });
+
+    expect(evidenceValue(spending, "Modeled monthly expenses")).toBe(formatCurrency(0, profile.currency));
+    expect(evidenceValue(investments, "Investment assets")).toBe(formatCurrency(0, profile.currency));
+    expect(evidenceValue(investments, "Retirement assets")).toBe(formatCurrency(0, profile.currency));
+    expect(evidenceValue(investments, "Invested total")).toBe(formatCurrency(0, profile.currency));
+    expect(evidenceValue(health, "Net worth")).toBe(formatCurrency(-1_500, profile.currency));
+    expect(evidenceValue(health, "Monthly surplus")).toBe(formatCurrency(-250, profile.currency));
   });
 
   it("defends every intent against nonfinite supplied numbers", () => {
