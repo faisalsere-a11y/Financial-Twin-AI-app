@@ -15,8 +15,23 @@ const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttribut
 );
 TableHeader.displayName = "TableHeader";
 
-const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  ({ className, ...props }, ref) => <tbody ref={ref} className={cn("[&_tr:last-child]:border-0", className)} {...props} />
+export interface TableBodyProps extends React.HTMLAttributes<HTMLTableSectionElement> {
+  animated?: boolean;
+}
+
+const TableBody = React.forwardRef<HTMLTableSectionElement, TableBodyProps>(
+  ({ className, animated = false, ...props }, ref) => (
+    <tbody
+      ref={ref}
+      className={cn(
+        "[&_tr:last-child]:border-0",
+        animated &&
+          "motion-safe:[&_tr]:animate-in motion-safe:[&_tr]:fade-in-0 motion-safe:[&_tr]:slide-in-from-bottom-1 motion-safe:[&_tr]:duration-[var(--motion-standard)] motion-safe:[&_tr:nth-child(2)]:delay-[40ms] motion-safe:[&_tr:nth-child(3)]:delay-[80ms] motion-safe:[&_tr:nth-child(4)]:delay-[120ms] motion-safe:[&_tr:nth-child(5)]:delay-[160ms] motion-safe:[&_tr:nth-child(6)]:delay-[200ms] motion-safe:[&_tr:nth-child(n+7)]:delay-[240ms]",
+        className
+      )}
+      {...props}
+    />
+  )
 );
 TableBody.displayName = "TableBody";
 

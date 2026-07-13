@@ -4,17 +4,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-bold motion-safe:transition-transform motion-safe:duration-[var(--motion-fast)] motion-safe:ease-out motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:scale-100 disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "border border-primary/25 bg-primary text-primary-foreground shadow-glow hover:bg-primary/90",
-        secondary: "border border-positive/25 bg-positive/10 text-positive hover:bg-positive/15",
+          "glow-sweep border border-primary/25 bg-primary text-primary-foreground shadow-glow hover:bg-primary/90",
+        secondary: "glow-sweep border border-positive/25 bg-positive/10 text-positive hover:bg-positive/15",
         outline: "border border-border bg-card/70 hover:bg-muted",
         ghost: "hover:bg-muted hover:text-foreground",
         destructive: "bg-destructive text-destructive-foreground hover:brightness-110",
-        glass: "border border-border bg-card/75 text-foreground backdrop-blur hover:bg-muted"
+        glass: "glow-sweep border border-border bg-card/75 text-foreground backdrop-blur hover:bg-muted"
       },
       size: {
         default: "h-10 px-4 py-2",

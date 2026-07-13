@@ -213,7 +213,7 @@ export function ReportsPage() {
                 <TableHead scope="col">Net worth</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody animated>
               {visibleTimeline.map((point) => (
                 <TableRow key={point.month}>
                   <th scope="row" className="p-3 text-left font-semibold">{point.month}</th>
