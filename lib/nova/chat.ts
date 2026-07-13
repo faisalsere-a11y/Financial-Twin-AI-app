@@ -23,6 +23,14 @@ type NovaEvidence = NovaChatResponse["evidence"][number];
 
 type ResponseContent = Omit<NovaChatResponse, "id" | "intent" | "boundary">;
 
+type SanitizedCashFlowSnapshot = {
+  monthlyExpenses: number | null;
+  monthlySurplus: number | null;
+  expenseDetail: string;
+  surplusDetail: string;
+  disclosure: string | null;
+};
+
 const EDUCATIONAL_BOUNDARY =
   "Educational decision support only. Nova uses the supplied profile and financial twin model; it has no transaction feed and cannot replace personalized financial, investment, tax, or legal advice.";
 
@@ -210,25 +218,9 @@ const NAMED_MONTHS = [
 
 const AMBIGUOUS_MONTHS: ReadonlySet<string> = new Set(["march", "may"]);
 
-const AMBIGUOUS_MONTH_ACTIVITY_TERMS = [
-  "expense",
-  "expenses",
-  "spending",
-  "transaction",
-  "transactions",
-  "merchant",
-  "merchants",
-  "purchase",
-  "purchases",
-  "portfolio",
-  "investment",
-  "investments",
-  "return",
-  "returns",
-  "performance",
-  "debt",
-  "debts"
-] as const;
+const AMBIGUOUS_MONTH_QUERY_CUES = ["show", "display", "review", "compare", "summarize"] as const;
+
+const AMBIGUOUS_MONTH_QUERY_PRONOUNS = ["my", "our", "your", "their", "his", "her"] as const;
 
 const DATE_PREPOSITIONS = ["in", "during", "for", "since", "from", "through"] as const;
 
@@ -319,18 +311,29 @@ function isHistoryRequest(normalized: string) {
   const hasNamedMonth = NAMED_MONTHS.some((month) => {
     if (!containsKeyword(normalized, month)) return false;
     if (!AMBIGUOUS_MONTHS.has(month)) return true;
-    const hasDatePreposition = DATE_PREPOSITIONS.some((prefix) =>
-      containsKeyword(normalized, `${prefix} ${month}`)
-    );
+    const tokens = normalized.split(" ");
+    const hasPositionalCue = tokens.some((token, index) => {
+      if (token !== month) return false;
+      const previous = tokens[index - 1];
+      const previousPrevious = tokens[index - 2];
+      const next = tokens[index + 1];
+      const hasDatePreposition = DATE_PREPOSITIONS.some((prefix) => prefix === previous);
+      const hasNumericDay = typeof next === "string" && /^\d{1,2}$/.test(next);
+      const hasPossessiveMarker = next === "s";
+      const hasDirectQueryCue = AMBIGUOUS_MONTH_QUERY_CUES.some((cue) => cue === previous);
+      const hasPronounQueryCue =
+        AMBIGUOUS_MONTH_QUERY_PRONOUNS.some((pronoun) => pronoun === previous) &&
+        AMBIGUOUS_MONTH_QUERY_CUES.some((cue) => cue === previousPrevious);
+      return (
+        hasDatePreposition ||
+        hasNumericDay ||
+        hasPossessiveMarker ||
+        hasDirectQueryCue ||
+        hasPronounQueryCue
+      );
+    });
     const hasPastCue = PAST_DATE_CUES.some((cue) => containsKeyword(normalized, cue));
-    const hasDay = new RegExp(`(?:^|\\s)${month}\\s+\\d{1,2}(?:\\s|$)`).test(normalized);
-    const hasPossessiveMarker = containsKeyword(normalized, `${month} s`);
-    const hasAdjacentActivity = AMBIGUOUS_MONTH_ACTIVITY_TERMS.some(
-      (activity) =>
-        containsKeyword(normalized, `${month} ${activity}`) ||
-        containsKeyword(normalized, `${activity} ${month}`)
-    );
-    return hasDatePreposition || hasPastCue || hasDay || hasPossessiveMarker || hasAdjacentActivity;
+    return hasPastCue || hasPositionalCue;
   });
   const hasCalendarYear = /(?:^|\s)(?:19|20)\d{2}(?:\s|$)/.test(normalized);
   const hasFinancialSubject = FINANCIAL_HISTORY_KEYWORDS.some((keyword) =>
@@ -438,6 +441,66 @@ function sumNonNegative(values: unknown[]) {
   return Number.isFinite(sum) ? sum : null;
 }
 
+function sanitizedCashFlowSnapshot(request: NovaChatRequest): SanitizedCashFlowSnapshot {
+  const { profile, twin } = request;
+  const expenseComponents = Object.values(profile.expenses).map(nonNegativeNumber);
+  const incomeComponents = [
+    nonNegativeNumber(profile.income.salaryMonthly),
+    nonNegativeNumber(profile.income.bonusesAnnual),
+    nonNegativeNumber(profile.income.otherMonthly)
+  ];
+  const invalidExpenseCount = expenseComponents.filter((value) => value === null).length;
+  const invalidIncomeCount = incomeComponents.filter((value) => value === null).length;
+
+  if (!invalidExpenseCount && !invalidIncomeCount) {
+    return {
+      monthlyExpenses: nonNegativeNumber(twin.monthlyExpenses),
+      monthlySurplus: finiteNumber(twin.monthlySurplus),
+      expenseDetail: "Supplied financial-twin total; this is not observed transaction activity.",
+      surplusDetail: "Supplied income less modeled monthly expenses.",
+      disclosure: null
+    };
+  }
+
+  const validExpenseComponents = expenseComponents.filter((value): value is number => value !== null);
+  const expenseSum = validExpenseComponents.reduce((total, value) => total + value, 0);
+  const monthlyExpenses = nonNegativeNumber(expenseSum);
+  let monthlyIncome: number | null = null;
+
+  if (!invalidIncomeCount) {
+    const salaryMonthly = incomeComponents[0] as number;
+    const bonusesAnnual = incomeComponents[1] as number;
+    const otherMonthly = incomeComponents[2] as number;
+    monthlyIncome = nonNegativeNumber(salaryMonthly + bonusesAnnual / 12 + otherMonthly);
+  }
+
+  const derivedSurplus =
+    monthlyIncome !== null && monthlyExpenses !== null ? finiteNumber(monthlyIncome - monthlyExpenses) : null;
+  const omittedParts = [
+    invalidExpenseCount
+      ? `${invalidExpenseCount} invalid expense input${invalidExpenseCount === 1 ? "" : "s"}`
+      : null,
+    invalidIncomeCount ? `${invalidIncomeCount} invalid income input${invalidIncomeCount === 1 ? "" : "s"}` : null
+  ].filter((part): part is string => part !== null);
+  const omittedCount = invalidExpenseCount + invalidIncomeCount;
+  const omission = `${omittedParts.join(" and ")} ${omittedCount === 1 ? "was" : "were"} omitted from cash-flow evidence.`;
+  const disclosure =
+    derivedSurplus === null
+      ? `${omission} Monthly expenses were derived from valid nonnegative categories, but monthly surplus is unavailable without complete valid income inputs.`
+      : `${omission} Monthly expenses and surplus were recalculated from valid nonnegative profile inputs.`;
+
+  return {
+    monthlyExpenses,
+    monthlySurplus: derivedSurplus,
+    expenseDetail: `Derived from valid nonnegative expense categories. ${omission}`,
+    surplusDetail:
+      derivedSurplus === null
+        ? `Unavailable without complete valid income inputs. ${omission}`
+        : `Derived from valid nonnegative income and expense inputs. ${omission}`,
+    disclosure
+  };
+}
+
 function requestFingerprint(request: NovaChatRequest, normalized: string) {
   const { profile, twin } = request;
   const parts = [
@@ -489,15 +552,20 @@ function ensureHistoryBoundary(markdown: string, normalized: string) {
   return [introductionParagraph, historyBoundary(), ...remainingParagraphs].join("\n\n");
 }
 
-function cashFlowSentence(value: unknown, currency: FinancialProfile["currency"]) {
-  const surplus = finiteNumber(value);
-  if (surplus === null) return "The supplied monthly cash-flow figure is unavailable.";
-  if (surplus < 0) return `Modeled cash flow has a monthly shortfall of **${safeCurrency(Math.abs(surplus), currency)}**.`;
-  return `Modeled cash flow leaves a monthly surplus of **${safeCurrency(surplus, currency)}**.`;
+function cashFlowSentence(snapshot: SanitizedCashFlowSnapshot, currency: FinancialProfile["currency"]) {
+  const surplus = snapshot.monthlySurplus;
+  const sentence =
+    surplus === null
+      ? "The monthly cash-flow figure is unavailable."
+      : surplus < 0
+        ? `Modeled cash flow has a monthly shortfall of **${safeCurrency(Math.abs(surplus), currency)}**.`
+        : `Modeled cash flow leaves a monthly surplus of **${safeCurrency(surplus, currency)}**.`;
+  return snapshot.disclosure ? `${sentence} ${snapshot.disclosure}` : sentence;
 }
 
 function spendingContent(request: NovaChatRequest, normalized: string): ResponseContent {
-  const { profile, twin } = request;
+  const { profile } = request;
+  const cashFlow = sanitizedCashFlowSnapshot(request);
   const categories = (Object.keys(EXPENSE_LABELS) as Array<keyof ExpenseModel>).map((key) => ({
     label: EXPENSE_LABELS[key],
     value: nonNegativeNumber(profile.expenses[key])
@@ -510,8 +578,8 @@ function spendingContent(request: NovaChatRequest, normalized: string): Response
   const evidence: NovaEvidence[] = [
     {
       label: "Modeled monthly expenses",
-      value: safeNonNegativeCurrency(twin.monthlyExpenses, profile.currency),
-      detail: "Supplied financial-twin total; this is not observed transaction activity."
+      value: safeNonNegativeCurrency(cashFlow.monthlyExpenses, profile.currency),
+      detail: cashFlow.expenseDetail
     },
     ...(largest
       ? [
@@ -524,18 +592,18 @@ function spendingContent(request: NovaChatRequest, normalized: string): Response
       : []),
     {
       label: "Monthly surplus",
-      value: safeCurrency(twin.monthlySurplus, profile.currency),
-      detail: "Supplied income less modeled monthly expenses."
+      value: safeCurrency(cashFlow.monthlySurplus, profile.currency),
+      detail: cashFlow.surplusDetail
     }
   ];
   const categorySentence = largest
-    ? `The **modeled monthly expenses** total **${safeNonNegativeCurrency(twin.monthlyExpenses, profile.currency)}**. The largest positive category is **${largest.label}** at **${safeNonNegativeCurrency(largest.value, profile.currency)}**.`
-    : `The **modeled monthly expenses** total **${safeNonNegativeCurrency(twin.monthlyExpenses, profile.currency)}**. There are no positive expense categories to rank, so I will not name a largest item.`;
+    ? `The **modeled monthly expenses** total **${safeNonNegativeCurrency(cashFlow.monthlyExpenses, profile.currency)}**. The largest positive category is **${largest.label}** at **${safeNonNegativeCurrency(largest.value, profile.currency)}**.`
+    : `The **modeled monthly expenses** total **${safeNonNegativeCurrency(cashFlow.monthlyExpenses, profile.currency)}**. There are no positive expense categories to rank, so I will not name a largest item.`;
   const paragraphs = [
     introduction(normalized, "your spending model"),
     ...(isHistoryRequest(normalized) ? [historyBoundary()] : []),
     categorySentence,
-    cashFlowSentence(twin.monthlySurplus, profile.currency)
+    cashFlowSentence(cashFlow, profile.currency)
   ];
   const followUps = !largest
     ? [
@@ -646,7 +714,8 @@ function selectGoal(goals: GoalModel[], normalized: string): GoalModel | null {
 }
 
 function goalContent(request: NovaChatRequest, normalized: string): ResponseContent {
-  const { profile, twin } = request;
+  const { profile } = request;
+  const cashFlow = sanitizedCashFlowSnapshot(request);
   const goal = selectGoal(profile.goals, normalized);
 
   if (!goal) {
@@ -658,7 +727,7 @@ function goalContent(request: NovaChatRequest, normalized: string): ResponseCont
         hasInvalidGoals
           ? "No valid goals are modeled in this profile. Every supplied goal needs a finite positive target before it can be ranked or forecast."
           : "No goals are modeled in this profile, so there is no goal to rank or forecast.",
-        cashFlowSentence(twin.monthlySurplus, profile.currency)
+        cashFlowSentence(cashFlow, profile.currency)
       ].join("\n\n"),
       evidence: [
         {
@@ -670,8 +739,8 @@ function goalContent(request: NovaChatRequest, normalized: string): ResponseCont
         },
         {
           label: "Monthly surplus",
-          value: safeCurrency(twin.monthlySurplus, profile.currency),
-          detail: "Available modeled cash flow before a goal contribution is configured."
+          value: safeCurrency(cashFlow.monthlySurplus, profile.currency),
+          detail: cashFlow.surplusDetail
         }
       ],
       followUps: [
@@ -710,7 +779,7 @@ function goalContent(request: NovaChatRequest, normalized: string): ResponseCont
       introduction(normalized, "your goal progress"),
       `For **${markdownGoalName}**, the profile has **${safeNonNegativeCurrency(current, profile.currency)}** toward **${safeNonNegativeCurrency(target, profile.currency)}** (${safeNonNegativePercent(progress)}).`,
       fundingSentence,
-      cashFlowSentence(twin.monthlySurplus, profile.currency)
+      cashFlowSentence(cashFlow, profile.currency)
     ].join("\n\n"),
     evidence: [
       {
@@ -853,7 +922,7 @@ function debtContent(request: NovaChatRequest, normalized: string): ResponseCont
   };
 }
 
-function healthEvidence(request: NovaChatRequest): NovaEvidence[] {
+function healthEvidence(request: NovaChatRequest, cashFlow: SanitizedCashFlowSnapshot): NovaEvidence[] {
   const { profile, twin } = request;
   const riskScore = boundedScore(twin.risk.score);
   const riskLevel = safePlainText(twin.risk.level, "Unavailable");
@@ -876,14 +945,15 @@ function healthEvidence(request: NovaChatRequest): NovaEvidence[] {
     },
     {
       label: "Monthly surplus",
-      value: safeCurrency(twin.monthlySurplus, profile.currency),
-      detail: "Supplied modeled monthly cash flow."
+      value: safeCurrency(cashFlow.monthlySurplus, profile.currency),
+      detail: cashFlow.surplusDetail
     }
   ];
 }
 
 function healthContent(request: NovaChatRequest, normalized: string): ResponseContent {
   const { profile, twin } = request;
+  const cashFlow = sanitizedCashFlowSnapshot(request);
   const score = boundedScore(twin.financialHealth.score);
   const scoreSentence =
     score === null
@@ -895,9 +965,9 @@ function healthContent(request: NovaChatRequest, normalized: string): ResponseCo
     markdown: [
       introduction(normalized, "your financial health"),
       scoreSentence,
-      `Modeled net worth is **${safeCurrency(twin.netWorth, profile.currency)}**. ${cashFlowSentence(twin.monthlySurplus, profile.currency)}`
+      `Modeled net worth is **${safeCurrency(twin.netWorth, profile.currency)}**. ${cashFlowSentence(cashFlow, profile.currency)}`
     ].join("\n\n"),
-    evidence: healthEvidence(request),
+    evidence: healthEvidence(request, cashFlow),
     followUps: [
       "Which factors drive my financial health score?",
       "How much monthly surplus is modeled?",
@@ -909,15 +979,17 @@ function healthContent(request: NovaChatRequest, normalized: string): ResponseCo
 
 function generalContent(request: NovaChatRequest, normalized: string): ResponseContent {
   const { profile, twin } = request;
+  const cashFlow = sanitizedCashFlowSnapshot(request);
+  const cashFlowDisclosure = cashFlow.disclosure ? ` ${cashFlow.disclosure}` : "";
 
   return {
     title: "Financial twin snapshot",
     markdown: [
       introduction(normalized, "your financial snapshot"),
       "I can explain the supplied model across **spending**, **investments**, **goals**, **debt**, and **financial health**. I do not infer transactions or facts outside that model.",
-      `The current snapshot shows **${safeScore(twin.financialHealth.score)}** financial health, **${safeCurrency(twin.netWorth, profile.currency)}** net worth, and **${safeCurrency(twin.monthlySurplus, profile.currency)}** monthly surplus.`
+      `The current snapshot shows **${safeScore(twin.financialHealth.score)}** financial health, **${safeCurrency(twin.netWorth, profile.currency)}** net worth, and **${safeCurrency(cashFlow.monthlySurplus, profile.currency)}** monthly surplus.${cashFlowDisclosure}`
     ].join("\n\n"),
-    evidence: healthEvidence(request),
+    evidence: healthEvidence(request, cashFlow),
     followUps: [
       "Summarize my financial health.",
       "Review my modeled spending.",

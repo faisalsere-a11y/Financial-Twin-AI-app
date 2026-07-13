@@ -122,18 +122,35 @@ describe("deterministic Nova chat", () => {
     expect(classifyNovaIntent(message)).toBe("general");
   });
 
-  it.each([
-    "May I review my investment portfolio?",
-    "March toward a stronger investment portfolio"
-  ])("does not treat ambiguous month language as historical: %s", (message) => {
+  it.each<[string, NovaChatIntent]>([
+    ["May investments grow over time?", "investments"],
+    ["May debt payments decline if I pay extra?", "debt"],
+    ["May spending improve if I cut lifestyle costs?", "spending"],
+    ["May I review my investment portfolio?", "investments"],
+    ["March toward a stronger investment portfolio", "investments"]
+  ])("does not treat uncued ambiguous month language as historical: %s", (message, intent) => {
     const response = createNovaResponse({
       message,
       profile: sampleProfile,
       twin
     });
 
-    expect(response.intent).toBe("investments");
+    expect(response.intent).toBe(intent);
     expect(response.markdown).not.toMatch(/no transaction feed is connected/i);
+  });
+
+  it.each<[string, NovaChatIntent]>([
+    ["Show May income", "general"],
+    ["Show March net worth", "health"],
+    ["Show May goal progress", "goals"],
+    ["Show my March portfolio", "investments"],
+    ["Show May spending", "spending"]
+  ])("treats query-cued ambiguous month language as historical: %s", (message, intent) => {
+    const response = createNovaResponse({ message, profile: sampleProfile, twin });
+
+    expect(response.intent).toBe(intent);
+    expect(response.markdown).toMatch(/no transaction feed is connected/i);
+    expect(response.markdown).toMatch(/current model snapshot/i);
   });
 
   it.each<[string, NovaChatIntent, RegExp]>([
@@ -608,7 +625,56 @@ describe("deterministic Nova chat", () => {
     expect(responseText(response)).not.toMatch(/-SAR|SAR\s*-\d/);
   });
 
-  it("rejects negative expense and investment evidence while preserving legitimate negative cash flow", () => {
+  it("sanitizes mixed invalid expenses before emitting cash flow across intents", () => {
+    const profile = zeroProfile();
+    profile.income.salaryMonthly = 2_500;
+    profile.expenses.housing = -400;
+    profile.expenses.food = 1_000;
+    profile.goals = [
+      {
+        id: "cash-flow-goal",
+        name: "Cash flow goal",
+        category: "Emergency",
+        targetAmount: 5_000,
+        currentAmount: 1_000,
+        monthlyContribution: 100,
+        targetDate: "2028-01-01",
+        priority: "High"
+      }
+    ];
+    const contaminatedTwin = calculateFinancialTwin(profile);
+    const spending = createNovaResponse({ message: "Review my spending", profile, twin: contaminatedTwin });
+    const health = createNovaResponse({ message: "Review my financial health", profile, twin: contaminatedTwin });
+    const general = createNovaResponse({ message: "Hello, Nova", profile, twin: contaminatedTwin });
+    const goals = createNovaResponse({ message: "Review my goals", profile, twin: contaminatedTwin });
+    const sanitizedExpenses = formatCurrency(1_000, profile.currency);
+    const sanitizedSurplus = formatCurrency(1_500, profile.currency);
+    const contaminatedExpenses = formatCurrency(600, profile.currency);
+    const contaminatedSurplus = formatCurrency(1_900, profile.currency);
+
+    expect(contaminatedTwin.monthlyExpenses).toBe(600);
+    expect(contaminatedTwin.monthlySurplus).toBe(1_900);
+    expect(evidenceValue(spending, "Modeled monthly expenses")).toBe(sanitizedExpenses);
+    expect(evidenceValue(spending, "Largest modeled category")).toBe("Food");
+    expect(evidenceValue(spending, "Monthly surplus")).toBe(sanitizedSurplus);
+    expect(spending.markdown).not.toContain("Housing");
+    expect(responseText(spending)).not.toContain(contaminatedExpenses);
+    expect(responseText(spending)).not.toContain(formatCurrency(-400, profile.currency));
+    expect(spending.evidence.find((item) => item.label === "Modeled monthly expenses")?.detail).toMatch(
+      /invalid.*omitted/i
+    );
+
+    expect(evidenceValue(health, "Monthly surplus")).toBe(sanitizedSurplus);
+    expect(evidenceValue(general, "Monthly surplus")).toBe(sanitizedSurplus);
+    expect(goals.markdown).toContain(sanitizedSurplus);
+
+    [spending, health, general, goals].forEach((response) => {
+      expect(responseText(response)).not.toContain(contaminatedSurplus);
+      expect(responseText(response)).toMatch(/invalid.*omitted/i);
+    });
+  });
+
+  it("rejects negative expense and investment evidence plus contaminated cash flow", () => {
     const profile = zeroProfile();
     profile.expenses.housing = -400;
     profile.assets.investments = -1_000;
@@ -633,7 +699,8 @@ describe("deterministic Nova chat", () => {
     const investments = createNovaResponse({ message: "Review my investments", profile, twin: invalidTwin });
     const health = createNovaResponse({ message: "Review my financial health", profile, twin: invalidTwin });
 
-    expect(evidenceValue(spending, "Modeled monthly expenses")).toBe("Unavailable");
+    expect(evidenceValue(spending, "Modeled monthly expenses")).toBe(formatCurrency(0, profile.currency));
+    expect(evidenceValue(spending, "Monthly surplus")).toBe(formatCurrency(0, profile.currency));
     expect(spending.evidence.some((item) => item.label === "Largest modeled category")).toBe(false);
     expect(evidenceValue(investments, "Investment assets")).toBe("Unavailable");
     expect(evidenceValue(investments, "Retirement assets")).toBe("Unavailable");
@@ -649,7 +716,7 @@ describe("deterministic Nova chat", () => {
     expect(evidenceValue(health, "Financial health")).toBe("0/100");
     expect(evidenceValue(health, "Risk")).toBe(`${invalidTwin.risk.level} (100/100)`);
     expect(evidenceValue(health, "Net worth")).toBe(formatCurrency(-10_000, profile.currency));
-    expect(evidenceValue(health, "Monthly surplus")).toBe(formatCurrency(-750, profile.currency));
+    expect(evidenceValue(health, "Monthly surplus")).toBe(formatCurrency(0, profile.currency));
     expect(invalidTwin.savingsRate).toBe(-35);
   });
 
