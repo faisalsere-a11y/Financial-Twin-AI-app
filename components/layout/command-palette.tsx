@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { motionTokens } from "@/lib/motion/variants";
 import {
   COMMAND_PALETTE_EVENT,
   filterCommands,
@@ -52,17 +54,23 @@ export function CommandPalette({ onOpenChange }: { onOpenChange?: (open: boolean
   const [activeIndex, setActiveIndex] = useState(0);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   const filtered = useMemo(() => filterCommands(query), [query]);
 
   const show = useCallback(() => {
-    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialogRef.current?.contains(document.activeElement)) {
+      previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
     setOpen(true);
     onOpenChange?.(true);
   }, [onOpenChange]);
 
   const close = useCallback(() => {
     setOpen(false);
+  }, []);
+
+  const completeClose = useCallback(() => {
     onOpenChange?.(false);
     setQuery("");
     requestAnimationFrame(() => previousFocusRef.current?.focus());
@@ -93,113 +101,124 @@ export function CommandPalette({ onOpenChange }: { onOpenChange?: (open: boolean
     setActiveIndex(0);
   }, [query]);
 
-  if (!open) return null;
-
   const focusCommand = (index: number) => {
     const items = dialogRef.current?.querySelectorAll<HTMLElement>("[role='option']");
     items?.[Math.max(0, Math.min(index, items.length - 1))]?.focus();
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-background/78 px-4 pt-20 backdrop-blur-xl"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) close();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="command-palette-title"
-        className="glass-panel-strong w-full max-w-2xl overflow-hidden rounded-2xl"
-        onKeyDown={(event) => {
-          if (event.key !== "Tab") return;
-          const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? []);
-          const first = focusable[0];
-          const last = focusable.at(-1);
-          if (!first || !last) return;
-          if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-          } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first.focus();
-          }
-        }}
-      >
-        <h2 id="command-palette-title" className="sr-only">Quick navigation and actions</h2>
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <Search className="size-5 text-muted-foreground" aria-hidden="true" />
-          <Input
-            autoFocus
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+    <AnimatePresence onExitComplete={completeClose}>
+      {open && (
+        <motion.div
+          key="command-palette"
+          initial={shouldReduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+          className="fixed inset-0 z-50 flex items-start justify-center bg-background/78 px-4 pt-20 backdrop-blur-xl"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) close();
+          }}
+        >
+          <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="command-palette-title"
+            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.985 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.985 }}
+            transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+            className="glass-panel-strong w-full max-w-2xl origin-top overflow-hidden rounded-2xl"
             onKeyDown={(event) => {
-              if (event.key === "ArrowDown" && filtered.length) {
+              if (event.key !== "Tab") return;
+              const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? []);
+              const first = focusable[0];
+              const last = focusable.at(-1);
+              if (!first || !last) return;
+              if (event.shiftKey && document.activeElement === first) {
                 event.preventDefault();
-                setActiveIndex(0);
-                focusCommand(0);
+                last.focus();
+              } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
               }
             }}
-            placeholder="Search pages, decisions, and reports"
-            aria-label="Search commands"
-            aria-controls="command-palette-results"
-            className="border-0 bg-transparent focus-visible:ring-0"
-          />
-          <kbd className="hidden rounded-lg border border-border bg-muted px-2 py-1 text-xs text-muted-foreground sm:block">
-            Esc
-          </kbd>
-          <Button variant="ghost" size="icon" onClick={close} aria-label="Close command palette">
-            <X className="size-4" />
-          </Button>
-        </div>
-        <div id="command-palette-results" role="listbox" aria-label="Commands" className="max-h-96 overflow-y-auto p-2">
-          {filtered.map((command, index) => {
-            const Icon = icons[command.icon];
-            return (
-              <Link
-                key={command.label}
-                href={command.href}
-                role="option"
-                aria-selected={activeIndex === index}
-                onFocus={() => setActiveIndex(index)}
+          >
+            <h2 id="command-palette-title" className="sr-only">Quick navigation and actions</h2>
+            <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+              <Search className="size-5 text-muted-foreground" aria-hidden="true" />
+              <Input
+                autoFocus
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === "ArrowDown") {
+                  if (event.key === "ArrowDown" && filtered.length) {
                     event.preventDefault();
-                    const next = (index + 1) % filtered.length;
-                    setActiveIndex(next);
-                    focusCommand(next);
-                  } else if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    const next = (index - 1 + filtered.length) % filtered.length;
-                    setActiveIndex(next);
-                    focusCommand(next);
+                    setActiveIndex(0);
+                    focusCommand(0);
                   }
                 }}
-                onClick={close}
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-colors hover:bg-muted",
-                  "focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                )}
-              >
-                <span className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
-                  <Icon className="size-5" aria-hidden="true" />
-                </span>
-                <span className="flex flex-1 flex-col">
-                  <span className="font-semibold">{command.label}</span>
-                  <span className="text-xs text-muted-foreground">{command.hint}</span>
-                </span>
-              </Link>
-            );
-          })}
-          {!filtered.length && (
-            <div role="status" className="px-4 py-10 text-center text-sm text-muted-foreground">
-              No matching command. Try a page or financial task.
+                placeholder="Search pages, decisions, and reports"
+                aria-label="Search commands"
+                aria-controls="command-palette-results"
+                className="border-0 bg-transparent focus-visible:ring-0"
+              />
+              <kbd className="hidden rounded-lg border border-border bg-muted px-2 py-1 text-xs text-muted-foreground sm:block">
+                Esc
+              </kbd>
+              <Button variant="ghost" size="icon" onClick={close} aria-label="Close command palette">
+                <X className="size-4" />
+              </Button>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+            <div id="command-palette-results" role="listbox" aria-label="Commands" className="max-h-96 overflow-y-auto p-2">
+              {filtered.map((command, index) => {
+                const Icon = icons[command.icon];
+                return (
+                  <Link
+                    key={command.label}
+                    href={command.href}
+                    role="option"
+                    aria-selected={activeIndex === index}
+                    onFocus={() => setActiveIndex(index)}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowDown") {
+                        event.preventDefault();
+                        const next = (index + 1) % filtered.length;
+                        setActiveIndex(next);
+                        focusCommand(next);
+                      } else if (event.key === "ArrowUp") {
+                        event.preventDefault();
+                        const next = (index - 1 + filtered.length) % filtered.length;
+                        setActiveIndex(next);
+                        focusCommand(next);
+                      }
+                    }}
+                    onClick={close}
+                    className={cn(
+                      "flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-colors hover:bg-muted",
+                      "focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    )}
+                  >
+                    <span className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                      <Icon className="size-5" aria-hidden="true" />
+                    </span>
+                    <span className="flex flex-1 flex-col">
+                      <span className="font-semibold">{command.label}</span>
+                      <span className="text-xs text-muted-foreground">{command.hint}</span>
+                    </span>
+                  </Link>
+                );
+              })}
+              {!filtered.length && (
+                <div role="status" className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  No matching command. Try a page or financial task.
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

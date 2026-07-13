@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Activity,
   Gauge,
@@ -10,6 +11,8 @@ import {
   LayoutDashboard,
   Menu,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   PieChart,
   Search,
   Settings,
@@ -21,13 +24,20 @@ import {
   X,
   type LucideIcon
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { NovaOrb } from "@/components/brand/nova-orb";
+import { motionTokens } from "@/lib/motion/variants";
 import { openCommandPalette } from "@/lib/ui/commands";
-import { navItems, type NavigationIcon } from "@/lib/ui/navigation";
+import {
+  getSidebarPreferenceStorage,
+  navItems,
+  persistSidebarCollapsedPreference,
+  readSidebarCollapsedPreferenceResult,
+  type NavigationIcon
+} from "@/lib/ui/navigation";
 import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import { cn } from "@/lib/utils";
 
@@ -41,48 +51,123 @@ const navigationIcons: Record<NavigationIcon, LucideIcon> = {
   user: UserRound
 };
 
-function Brand({ href = "/dashboard" }: { href?: string }) {
+const SIDEBAR_WIDTH_EXPANDED = 280;
+const SIDEBAR_WIDTH_COLLAPSED = 88;
+// Browser/device preference: financial-twin.sidebar-collapsed.v1
+
+type ShellOffsetStyle = CSSProperties & {
+  "--sidebar-width": string;
+};
+
+function Brand({ href = "/dashboard", compact = false }: { href?: string; compact?: boolean }) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <Link href={href} className="group flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-      <NovaOrb className="size-10 transition-transform group-hover:scale-105" />
-      <span className="leading-tight">
-        <span className="block text-sm font-black tracking-tight">Financial Twin AI</span>
-        <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          NOVA intelligence
-        </span>
-      </span>
+    <Link
+      href={href}
+      aria-label={compact ? "Financial Twin AI home" : undefined}
+      title={compact ? "Financial Twin AI" : undefined}
+      className={cn(
+        "group flex items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        compact ? "justify-center" : "gap-3"
+      )}
+    >
+      <motion.span
+        className="relative flex size-10 shrink-0 items-center justify-center"
+        animate={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: [0.92, 1, 0.92], scale: [1, 1.025, 1] }}
+        transition={shouldReduceMotion ? { duration: 0 } : { duration: 4.8, ease: "easeInOut", repeat: Infinity }}
+      >
+        <span aria-hidden="true" className="absolute inset-0 rounded-full bg-primary/20 blur-md" />
+        <NovaOrb className="relative size-10 motion-safe:transition-transform motion-safe:duration-[var(--motion-fast)] group-hover:scale-[1.04]" />
+      </motion.span>
+      <AnimatePresence initial={false}>
+        {!compact && (
+          <motion.span
+            key="brand-copy"
+            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+            transition={{ duration: shouldReduceMotion ? 0 : motionTokens.fast, ease: motionTokens.ease }}
+            className="whitespace-nowrap leading-tight"
+          >
+            <span className="block text-sm font-black tracking-tight">Financial Twin AI</span>
+            <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              NOVA intelligence
+            </span>
+          </motion.span>
+        )}
+      </AnimatePresence>
     </Link>
   );
 }
 
 function Sidebar({
+  collapsed = false,
+  layoutScope,
   onNavigate,
-  firstLinkRef
+  firstLinkRef,
+  onCollapseToggle
 }: {
+  collapsed?: boolean;
+  layoutScope: "desktop" | "mobile";
   onNavigate?: () => void;
   firstLinkRef?: (element: HTMLAnchorElement | null) => void;
+  onCollapseToggle?: () => void;
 }) {
   const pathname = usePathname();
   const { profile, source } = useFinancialProfile();
+  const shouldReduceMotion = useReducedMotion();
+  const presenceTransition = {
+    duration: shouldReduceMotion ? 0 : motionTokens.fast,
+    ease: motionTokens.ease
+  };
 
   return (
-    <aside className="flex h-full flex-col border-r border-border bg-card/95 backdrop-blur-2xl">
-      <div className="flex h-[78px] items-center border-b border-border px-6">
-        <Brand />
+    <aside className="flex h-full min-w-0 flex-col overflow-hidden border-r border-border bg-card/95 backdrop-blur-2xl">
+      <div className={cn("flex h-[78px] shrink-0 items-center border-b border-border", collapsed ? "justify-center px-3" : "px-6")}>
+        <Brand compact={collapsed} />
       </div>
-      <div className="px-4 pt-5">
-        <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <Badge variant={source === "saved" ? "success" : "blue"}>{source === "saved" ? "Saved twin" : "Sample twin"}</Badge>
-            <span className="text-[10px] font-bold text-primary">{profile.currency}</span>
-          </div>
-          <p className="text-sm font-black text-foreground">{profile.name}</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            {source === "saved" ? "Saved in this browser" : "Bundled sample profile"} · {profile.country}
-          </p>
-        </div>
+      <div className={cn("shrink-0 pt-5", collapsed ? "px-3" : "px-4")}>
+        <AnimatePresence initial={false} mode="wait">
+          {collapsed ? (
+            <motion.div
+              key="compact-profile"
+              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              transition={presenceTransition}
+              aria-label={`${profile.name}, ${profile.currency}`}
+              title={`${profile.name} — ${profile.currency}`}
+              className="flex h-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-xs font-black text-primary"
+            >
+              {profile.currency}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="expanded-profile"
+              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              transition={presenceTransition}
+              className="rounded-2xl border border-primary/20 bg-primary/10 p-4"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <Badge variant={source === "saved" ? "success" : "blue"}>{source === "saved" ? "Saved twin" : "Sample twin"}</Badge>
+                <span className="text-[10px] font-bold text-primary">{profile.currency}</span>
+              </div>
+              <p className="text-sm font-black text-foreground">{profile.name}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {source === "saved" ? "Saved in this browser" : "Bundled sample profile"} · {profile.country}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-      <nav aria-label="Primary navigation" className="flex flex-1 flex-col gap-1.5 px-4 py-6">
+      <nav
+        id={`${layoutScope}-primary-links`}
+        aria-label="Primary navigation"
+        className={cn("flex flex-1 flex-col gap-1.5 py-6", collapsed ? "px-3" : "px-4")}
+      >
         {navItems.map((item, index) => {
           const Icon = navigationIcons[item.icon];
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -93,39 +178,99 @@ function Sidebar({
               href={item.href}
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
+              aria-label={collapsed ? `${item.label}: ${item.hint}` : undefined}
+              title={collapsed ? `${item.label} — ${item.hint}` : undefined}
               className={cn(
-                "group flex min-h-14 items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "group relative isolate flex min-h-14 items-center rounded-2xl px-3.5 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                collapsed ? "justify-center px-2" : "gap-3",
                 active
-                  ? "border-primary/25 bg-primary/10 text-foreground shadow-glow"
-                  : "border-transparent text-muted-foreground hover:border-border hover:bg-muted/70 hover:text-foreground"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
               )}
             >
+              {active && (
+                <motion.span
+                  layoutId={`primary-navigation-active-${layoutScope}`}
+                  aria-hidden="true"
+                  transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+                  className="absolute inset-0 z-0 rounded-2xl border border-primary/25 bg-primary/10 shadow-glow"
+                />
+              )}
               <span
                 className={cn(
-                  "flex size-9 items-center justify-center rounded-xl border transition-colors",
+                  "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-xl border motion-safe:transition-[color,transform,box-shadow] motion-safe:duration-[var(--motion-fast)] group-hover:scale-[1.04] group-hover:shadow-glow",
                   active
-                    ? "border-primary/25 bg-primary/10 text-primary"
+                    ? "border-primary/25 bg-primary/10 text-primary shadow-glow"
                     : "border-border bg-muted/50 text-muted-foreground group-hover:text-primary"
                 )}
               >
                 <Icon className="size-4" aria-hidden="true" />
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-bold">{item.label}</span>
-                <span className="block truncate text-[11px] text-muted-foreground">{item.hint}</span>
-              </span>
+              <AnimatePresence initial={false}>
+                {!collapsed && (
+                  <motion.span
+                    key="navigation-copy"
+                    initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+                    transition={presenceTransition}
+                    className="relative z-10 min-w-0 flex-1"
+                  >
+                    <span className="block font-bold">{item.label}</span>
+                    <span className="block truncate text-[11px] text-muted-foreground">{item.hint}</span>
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </Link>
           );
         })}
       </nav>
-      <div className="border-t border-border p-5">
-        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-          <span className="flex items-center gap-2">
-            <span className="h-0.5 w-4 rounded bg-positive" />
-            {profile.country}
-          </span>
-          <span>Browser model</span>
-        </div>
+      <div className={cn("flex shrink-0 items-center border-t border-border", collapsed ? "justify-center p-3" : "justify-between gap-3 p-5")}>
+        <AnimatePresence initial={false}>
+          {!collapsed && (
+            <motion.div
+              key="model-status"
+              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+              transition={presenceTransition}
+              className="flex min-w-0 flex-1 items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              <span className="flex items-center gap-2">
+                <span className="h-0.5 w-4 rounded bg-positive" />
+                {profile.country}
+              </span>
+              <span>Browser model</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {onCollapseToggle && (
+          collapsed ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCollapseToggle}
+              aria-label="Expand navigation"
+              aria-expanded={false}
+              aria-controls="desktop-primary-links"
+              title="Expand navigation"
+            >
+              <PanelLeftOpen className="size-4" aria-hidden="true" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCollapseToggle}
+              aria-label="Collapse navigation"
+              aria-expanded={true}
+              aria-controls="desktop-primary-links"
+              title="Collapse navigation"
+            >
+              <PanelLeftClose className="size-4" aria-hidden="true" />
+            </Button>
+          )
+        )}
       </div>
     </aside>
   );
@@ -192,17 +337,53 @@ function Topbar() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const shouldReduceMotion = useReducedMotion();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarHydrated, setSidebarHydrated] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobilePresent, setMobilePresent] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstMobileLinkRef = useRef<HTMLAnchorElement>(null);
+  const sidebarPreferenceReadableRef = useRef(false);
+  const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
+  const shellTransition = {
+    duration: !sidebarHydrated || shouldReduceMotion ? 0 : motionTokens.standard,
+    ease: motionTokens.ease
+  };
 
   const closeMobile = useCallback(() => {
     setMobileOpen(false);
+  }, []);
+
+  const completeMobileClose = useCallback(() => {
+    setMobilePresent(false);
     requestAnimationFrame(() => menuButtonRef.current?.focus());
   }, []);
 
+  const openMobile = useCallback(() => {
+    setMobilePresent(true);
+    setMobileOpen(true);
+  }, []);
+
   useEffect(() => {
-    if (!mobileOpen) return;
+    const storage = getSidebarPreferenceStorage(window);
+    const preference = storage
+      ? readSidebarCollapsedPreferenceResult(storage)
+      : { collapsed: false, readable: false };
+    sidebarPreferenceReadableRef.current = preference.readable;
+    setSidebarCollapsed(preference.collapsed);
+    const hydrationFrame = requestAnimationFrame(() => setSidebarHydrated(true));
+    return () => cancelAnimationFrame(hydrationFrame);
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarHydrated || !sidebarPreferenceReadableRef.current) return;
+    const storage = getSidebarPreferenceStorage(window);
+    if (storage) persistSidebarCollapsedPreference(storage, sidebarCollapsed);
+  }, [sidebarCollapsed, sidebarHydrated]);
+
+  useEffect(() => {
+    if (!mobilePresent) return;
     const previousOverflow = document.body.style.overflow;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -219,72 +400,125 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [closeMobile, mobileOpen]);
+  }, [closeMobile, mobilePresent]);
 
   return (
     <div className="gradient-mesh min-h-screen">
       <a
         href="#main-content"
-        aria-hidden={mobileOpen || undefined}
-        inert={mobileOpen || undefined}
+        aria-hidden={mobilePresent || undefined}
+        inert={mobilePresent || undefined}
         className="app-print-hide fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-glow transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring"
       >
         Skip to main content
       </a>
-      <div aria-hidden={mobileOpen || undefined} inert={mobileOpen || undefined} className="app-print-hide fixed inset-y-0 left-0 z-40 hidden w-[280px] lg:block">
-        <Sidebar />
-      </div>
-      {mobileOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="mobile-menu-title"
-          className="fixed inset-0 z-50 lg:hidden"
-          onKeyDown={(event) => {
-            if (event.key !== "Tab") return;
-            const drawer = event.currentTarget.querySelector<HTMLElement>("#mobile-primary-navigation");
-            const focusable = Array.from(
-              drawer?.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])") ?? []
-            );
-            const first = focusable[0];
-            const last = focusable.at(-1);
-            if (!first || !last) return;
-            if (event.shiftKey && document.activeElement === first) {
-              event.preventDefault();
-              last.focus();
-            } else if (!event.shiftKey && document.activeElement === last) {
-              event.preventDefault();
-              first.focus();
-            }
+      <motion.div
+        initial={false}
+        animate={{ width: sidebarWidth }}
+        transition={shellTransition}
+        aria-hidden={mobilePresent || undefined}
+        inert={mobilePresent || undefined}
+        className={cn(
+          "app-print-hide fixed inset-y-0 left-0 z-40 hidden lg:block",
+          !sidebarHydrated && "lg:invisible"
+        )}
+      >
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          layoutScope="desktop"
+          onCollapseToggle={() => {
+            sidebarPreferenceReadableRef.current = true;
+            setSidebarCollapsed((current) => !current);
           }}
-        >
-          <h2 id="mobile-menu-title" className="sr-only">Primary navigation</h2>
-          <button
-            className="absolute inset-0 bg-background/80 backdrop-blur"
-            onClick={closeMobile}
-            aria-label="Close navigation"
-          />
-          <div id="mobile-primary-navigation" className="relative h-full w-[min(22rem,88vw)] shadow-glass-strong">
-            <Button
-              variant="ghost"
-              size="icon"
+        />
+      </motion.div>
+      <AnimatePresence onExitComplete={completeMobileClose}>
+        {mobileOpen && (
+          <motion.div
+            key="mobile-navigation"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-menu-title"
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            variants={{ hidden: {}, visible: {} }}
+            className="fixed inset-0 z-50 lg:hidden"
+            onKeyDown={(event) => {
+              if (event.key !== "Tab") return;
+              const drawer = event.currentTarget.querySelector<HTMLElement>("#mobile-primary-navigation");
+              const focusable = Array.from(
+                drawer?.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])") ?? []
+              );
+              const first = focusable[0];
+              const last = focusable.at(-1);
+              if (!first || !last) return;
+              if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+              } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+              }
+            }}
+          >
+            <h2 id="mobile-menu-title" className="sr-only">Primary navigation</h2>
+            <motion.button
+              type="button"
+              variants={{
+                hidden: { opacity: shouldReduceMotion ? 1 : 0 },
+                visible: { opacity: 1 }
+              }}
+              transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+              className="absolute inset-0 bg-background/80 backdrop-blur"
               onClick={closeMobile}
               aria-label="Close navigation"
-              className="absolute right-3 top-4 z-10"
+            />
+            <motion.div
+              id="mobile-primary-navigation"
+              variants={{
+                hidden: { opacity: shouldReduceMotion ? 1 : 0, x: shouldReduceMotion ? 0 : -24 },
+                visible: { opacity: 1, x: 0 }
+              }}
+              transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+              className="relative h-full w-[min(22rem,88vw)] shadow-glass-strong"
             >
-              <X className="size-4" aria-hidden="true" />
-            </Button>
-            <Sidebar onNavigate={closeMobile} firstLinkRef={(element) => { firstMobileLinkRef.current = element; }} />
-          </div>
-        </div>
-      )}
-      <div aria-hidden={mobileOpen || undefined} inert={mobileOpen || undefined} className="lg:pl-[280px]">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={closeMobile}
+                aria-label="Close navigation"
+                className="absolute right-3 top-4 z-10"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </Button>
+              <Sidebar
+                layoutScope="mobile"
+                onNavigate={closeMobile}
+                firstLinkRef={(element) => { firstMobileLinkRef.current = element; }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <motion.div
+        initial={false}
+        animate={{ "--sidebar-width": `${sidebarWidth}px` }}
+        transition={shellTransition}
+        style={{ "--sidebar-width": `${SIDEBAR_WIDTH_EXPANDED}px` } as ShellOffsetStyle}
+        aria-hidden={mobilePresent || undefined}
+        inert={mobilePresent || undefined}
+        className={cn(
+          "lg:pl-[var(--sidebar-width)]",
+          !sidebarHydrated && "lg:invisible"
+        )}
+      >
         <div className="flex h-[78px] items-center border-b border-border bg-card/80 px-4 backdrop-blur-2xl lg:hidden">
           <Button
             ref={menuButtonRef}
             variant="ghost"
             size="icon"
-            onClick={() => setMobileOpen(true)}
+            onClick={openMobile}
             aria-label="Open navigation"
             aria-expanded={mobileOpen}
             aria-controls="mobile-primary-navigation"
@@ -301,11 +535,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="pointer-events-none absolute bottom-0 left-1/4 size-96 rounded-full bg-positive/[0.08] blur-3xl" />
           <div className="relative">{children}</div>
         </main>
-      </div>
+      </motion.div>
       <button
         type="button"
-        aria-hidden={mobileOpen || undefined}
-        inert={mobileOpen || undefined}
+        aria-hidden={mobilePresent || undefined}
+        inert={mobilePresent || undefined}
         onClick={() => openCommandPalette()}
         className="app-print-hide fixed bottom-4 right-4 hidden rounded-full border border-border bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-glass backdrop-blur transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:block"
       >
