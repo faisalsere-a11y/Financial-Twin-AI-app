@@ -73,11 +73,20 @@ export function HeroAtmosphere() {
     if (!element || !surface) return;
     let animationFrame: number | null = null;
     let latestPointer: PointerEvent | null = null;
+    let cachedBounds: Pick<DOMRect, "left" | "top" | "width" | "height"> | null = null;
+
+    const cacheBounds = () => {
+      const bounds = surface.getBoundingClientRect();
+      cachedBounds = bounds.width > 0 && bounds.height > 0
+        ? { left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height }
+        : null;
+    };
 
     const resetPointer = () => {
       if (animationFrame !== null) cancelAnimationFrame(animationFrame);
       animationFrame = null;
       latestPointer = null;
+      cachedBounds = null;
       pointerX.set(0);
       pointerY.set(0);
       springX.jump(0);
@@ -93,28 +102,43 @@ export function HeroAtmosphere() {
       return;
     }
 
+    const flushPointer = () => {
+      animationFrame = null;
+      const pointer = latestPointer;
+      const bounds = cachedBounds;
+      if (!pointer || !bounds) return;
+      pointerX.set(normalizePointer(pointer.clientX, bounds.left, bounds.width));
+      pointerY.set(normalizePointer(pointer.clientY, bounds.top, bounds.height));
+    };
+
     const handlePointerMove = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
       latestPointer = event;
       if (animationFrame !== null) return;
 
-      animationFrame = requestAnimationFrame(() => {
-        animationFrame = null;
-        const pointer = latestPointer;
-        if (!pointer) return;
-        const bounds = surface.getBoundingClientRect();
-        pointerX.set(normalizePointer(pointer.clientX, bounds.left, bounds.width));
-        pointerY.set(normalizePointer(pointer.clientY, bounds.top, bounds.height));
-      });
+      animationFrame = requestAnimationFrame(flushPointer);
     };
 
+    cacheBounds();
+    let boundsObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      boundsObserver = new ResizeObserver(cacheBounds);
+      boundsObserver.observe(surface);
+    }
+    surface.addEventListener("pointerenter", cacheBounds);
     surface.addEventListener("pointermove", handlePointerMove, { passive: true });
     surface.addEventListener("pointerleave", resetPointer);
     surface.addEventListener("pointercancel", resetPointer);
+    window.addEventListener("resize", cacheBounds);
+    window.addEventListener("scroll", cacheBounds, { passive: true, capture: true });
     return () => {
+      surface.removeEventListener("pointerenter", cacheBounds);
       surface.removeEventListener("pointermove", handlePointerMove);
       surface.removeEventListener("pointerleave", resetPointer);
       surface.removeEventListener("pointercancel", resetPointer);
+      window.removeEventListener("resize", cacheBounds);
+      window.removeEventListener("scroll", cacheBounds, { capture: true });
+      if (boundsObserver) boundsObserver.disconnect();
       resetPointer();
     };
   }, [active, pointerX, pointerY, springX, springY]);

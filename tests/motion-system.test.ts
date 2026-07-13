@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
+import * as React from "react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AnimatedNumber } from "../components/motion/animated-number";
+import { Reveal, Stagger, StaggerItem } from "../components/motion/reveal";
 import * as numberMotion from "../lib/motion/number";
 
 describe("motion foundation", () => {
@@ -69,10 +71,47 @@ describe("motion foundation", () => {
     expect(animatedNumber).toContain("if (!hasAnimatedRef.current)");
     expect(pageTransition).toContain('initial={shouldReduceMotion ? false : "hidden"}');
     expect(pageTransition).toContain("duration: shouldReduceMotion ? 0 : motionTokens.standard");
-    expect(reveal.match(/initial=\{shouldReduceMotion \? false : "hidden"\}/g)).toHaveLength(2);
+    expect(reveal).not.toContain('initial={shouldReduceMotion ? false : "hidden"}');
+    expect(reveal.match(/initial=\{false\}/g)).toHaveLength(2);
+    expect(reveal.match(/animate=\{phase\}/g)).toHaveLength(2);
+    expect(reveal).toContain('useState<RevealPhase>("visible")');
+    expect(reveal).toContain("useBrowserLayoutEffect");
+    expect(reveal).toContain("getBoundingClientRect()");
+    expect(reveal).toContain("IntersectionObserver");
+    expect(reveal).toContain("observer.disconnect()");
+    expect(reveal).toContain("function useProgressiveReveal(observationKey: string)");
+    expect(reveal).toContain('useProgressiveReveal("div")');
+    expect(reveal).toContain("useProgressiveReveal(as)");
+    expect(reveal).toContain("}, [observationKey, shouldReduceMotion]);");
     expect(reveal).toContain("duration: shouldReduceMotion ? 0 : motionTokens.standard");
     expect(reveal).toContain("staggerChildren: 0");
     expect(motionCard).toContain("interactive && !shouldReduceMotion");
+  });
+
+  it("server-renders reveal and stagger content without hidden motion styles", () => {
+    vi.stubGlobal("React", React);
+    try {
+      const revealMarkup = renderToStaticMarkup(
+        createElement(Reveal, null, "Visible reveal content")
+      );
+      const staggerMarkup = renderToStaticMarkup(
+        createElement(
+          Stagger,
+          { as: "ol", "aria-label": "Progressive sequence" },
+          createElement(StaggerItem, { as: "li" }, "Visible stagger content")
+        )
+      );
+      const markup = `${revealMarkup}${staggerMarkup}`;
+
+      expect(markup).toContain("Visible reveal content");
+      expect(markup).toContain("Visible stagger content");
+      expect(staggerMarkup).toMatch(/^<ol[^>]*aria-label="Progressive sequence"[^>]*><li/);
+      expect(staggerMarkup).not.toContain("<div");
+      expect(markup).not.toMatch(/opacity:\s*0/);
+      expect(markup).not.toMatch(/translateY\(18px\)/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("reserves the final formatted number width without duplicate spoken output", () => {
@@ -154,12 +193,41 @@ describe("motion foundation", () => {
     const cardControls = motionCard.match(/type ControlledMotionCardProp =\s*([^;]+);/)?.[1] ?? "";
 
     expect(reveal).toContain('type RevealProps = Omit<HTMLMotionProps<"div">, ControlledRevealProp>');
-    expect(reveal).toContain('type StaggerItemProps = Omit<HTMLMotionProps<"div">, ControlledItemProp>');
+    expect(reveal).toContain('type StaggerElement = "div" | "ul" | "ol"');
+    expect(reveal).toContain('type StaggerItemElement = "div" | "li"');
+    expect(reveal).toContain('type StaggerProps<Element extends StaggerElement = "div"> =');
+    expect(reveal).toContain("Omit<HTMLMotionProps<Element>, ControlledRevealProp>");
+    expect(reveal).toContain('type StaggerItemProps<Element extends StaggerItemElement = "div"> =');
+    expect(reveal).toContain("Omit<HTMLMotionProps<Element>, ControlledItemProp>");
     expect(motionCard).toContain('type MotionCardProps = Omit<HTMLMotionProps<"div">, ControlledMotionCardProp> & {');
-    for (const prop of ["initial", "whileInView", "viewport", "variants", "transition"]) {
+    for (const prop of [
+      "initial",
+      "animate",
+      "whileInView",
+      "whileFocus",
+      "whileHover",
+      "whileTap",
+      "whileDrag",
+      "exit",
+      "viewport",
+      "variants",
+      "transition"
+    ]) {
       expect(revealControls).toContain(`"${prop}"`);
     }
-    for (const prop of ["variants", "transition"]) {
+    for (const prop of [
+      "initial",
+      "animate",
+      "whileInView",
+      "whileFocus",
+      "whileHover",
+      "whileTap",
+      "whileDrag",
+      "exit",
+      "viewport",
+      "variants",
+      "transition"
+    ]) {
       expect(itemControls).toContain(`"${prop}"`);
     }
     for (const prop of [
@@ -175,7 +243,7 @@ describe("motion foundation", () => {
     }
 
     expect(reveal.indexOf("{...props}")).toBeLessThan(
-      reveal.indexOf('initial={shouldReduceMotion ? false : "hidden"}')
+      reveal.indexOf("initial={false}")
     );
     expect(motionCard.indexOf("{...props}")).toBeLessThan(
       motionCard.indexOf('initial={shouldReduceMotion ? false : "hidden"}')

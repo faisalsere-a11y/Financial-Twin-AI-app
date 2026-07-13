@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Moon, Sun, SunMoon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { NovaOrb } from "@/components/brand/nova-orb";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ const navigationLinkClass = "rounded-lg px-1 py-2 transition-colors duration-[va
 
 function LandingThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const dark = resolvedTheme === "dark";
 
   return (
@@ -17,10 +20,17 @@ function LandingThemeToggle() {
       variant="ghost"
       size="icon"
       className="size-9 shrink-0"
-      aria-label={`Switch to ${dark ? "light" : "dark"} theme`}
+      aria-label={mounted ? `Switch to ${dark ? "light" : "dark"} theme` : "Change color theme"}
+      disabled={!mounted}
       onClick={() => setTheme(dark ? "light" : "dark")}
     >
-      {dark ? <Sun className="size-4" aria-hidden="true" /> : <Moon className="size-4" aria-hidden="true" />}
+      {!mounted ? (
+        <SunMoon className="size-4" aria-hidden="true" />
+      ) : dark ? (
+        <Sun className="size-4" aria-hidden="true" />
+      ) : (
+        <Moon className="size-4" aria-hidden="true" />
+      )}
     </Button>
   );
 }

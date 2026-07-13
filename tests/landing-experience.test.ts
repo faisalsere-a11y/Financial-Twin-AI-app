@@ -71,6 +71,20 @@ describe("landing experience", () => {
       expect(markup).toContain("Interactive financial decision preview");
       expect(markup).toContain("Clarity before commitment");
       expect(markup).toContain("Model it before money moves");
+      expect(markup).toContain('aria-label="Change color theme"');
+      expect(markup).toMatch(/<ul[^>]*aria-label="Verified product capabilities"[^>]*><li/);
+      expect(markup).toMatch(/<ol[^>]*aria-label="Financial twin workflow"[^>]*><li/);
+      expect(markup).toMatch(/<ol[^>]*aria-label="NOVA evidence sequence"[^>]*><li/);
+      expect(markup).toMatch(/<ul[^>]*aria-label="Supported decision groups"[^>]*><li/);
+      expect(markup).toMatch(/<ul[^>]*aria-label="Frequently asked questions"[^>]*><li/);
+      expect(markup).toMatch(/<ul[^>]*aria-label="Life choices scenarios"[^>]*><li/);
+
+      const workflowMarkup = markup.slice(
+        markup.indexOf('id="how-it-works"'),
+        markup.indexOf('id="nova"')
+      );
+      expect(workflowMarkup).not.toMatch(/opacity:\s*0/);
+      expect(workflowMarkup).not.toMatch(/translateY\(18px\)/);
     } finally {
       vi.unstubAllGlobals();
     }

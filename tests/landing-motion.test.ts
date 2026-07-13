@@ -40,6 +40,11 @@ describe("landing motion contracts", () => {
 
     expect(landingMotion).toContain("MAX_STAGGER_ITEMS = 4");
     expect(landingMotion).toContain("index < MAX_STAGGER_ITEMS");
+    expect(landingMotion).toContain('as?: "div" | "ul" | "ol"');
+    expect(landingMotion).toContain('const itemAs = as === "div" ? "div" : "li"');
+    expect(landingMotion).toContain("<Stagger as={as}");
+    expect(landingMotion).toContain("<StaggerItem as={itemAs}");
+    expect(landingMotion).toContain("<StaticItem");
     expect(maximumSequenceSeconds).toBeLessThanOrEqual(0.5);
     expect(motionTokens.deliberate).toBeLessThanOrEqual(0.5);
     const sourceDurations = [...landing.matchAll(/duration-\[(\d+)ms\]/g)].map((match) => Number(match[1]));
@@ -66,6 +71,31 @@ describe("landing motion contracts", () => {
     expect(atmosphere).toContain('addEventListener("pointercancel"');
     expect(atmosphere).not.toContain('window.addEventListener("pointermove"');
     expect(atmosphere).not.toContain('document.addEventListener("pointermove"');
+  });
+
+  it("caches hero bounds outside the pointer animation-frame flush", () => {
+    const cacheStart = atmosphere.indexOf("const cacheBounds");
+    const flushStart = atmosphere.indexOf("const flushPointer");
+    const moveStart = atmosphere.indexOf("const handlePointerMove");
+    const cacheBounds = atmosphere.slice(cacheStart, flushStart);
+    const flushPointer = atmosphere.slice(flushStart, moveStart);
+
+    expect(cacheStart).toBeGreaterThan(-1);
+    expect(flushStart).toBeGreaterThan(cacheStart);
+    expect(moveStart).toBeGreaterThan(flushStart);
+    expect(cacheBounds).toContain("surface.getBoundingClientRect()");
+    expect(cacheBounds).toContain("bounds.width > 0");
+    expect(cacheBounds).toContain("bounds.height > 0");
+    expect(flushPointer).toContain("cachedBounds");
+    expect(flushPointer).not.toContain("getBoundingClientRect()");
+    expect(atmosphere).toContain('surface.addEventListener("pointerenter", cacheBounds)');
+    expect(atmosphere).toContain('window.addEventListener("resize", cacheBounds)');
+    expect(atmosphere).toContain('window.addEventListener("scroll", cacheBounds');
+    expect(atmosphere).toContain('window.removeEventListener("resize", cacheBounds)');
+    expect(atmosphere).toContain('window.removeEventListener("scroll", cacheBounds');
+    expect(atmosphere).toContain('typeof ResizeObserver !== "undefined"');
+    expect(atmosphere).toContain("boundsObserver.observe(surface)");
+    expect(atmosphere).toContain("boundsObserver.disconnect()");
   });
 
   it("writes normalized spring output to inert transform-only decoration", () => {
@@ -98,5 +128,20 @@ describe("landing motion contracts", () => {
     expect(navigation).toContain("focus-visible:ring-2");
     expect(preview).toContain("duration-[var(--motion-fast)]");
     expect(preview).toContain("focus-visible:ring-2");
+  });
+
+  it("uses hydration-stable theme controls and one semantic chart summary", () => {
+    expect(navigation).toContain("useEffect");
+    expect(navigation).toContain("useState(false)");
+    expect(navigation).toContain("setMounted(true)");
+    expect(navigation).toContain('aria-label={mounted ? `Switch to ${dark ? "light" : "dark"} theme` : "Change color theme"}');
+    expect(navigation).toContain("disabled={!mounted}");
+    expect(navigation).toContain("SunMoon");
+    expect(navigation).not.toContain("suppressHydrationWarning");
+    expect(preview.match(/preview\.overview\.cashFlowSummary/g)).toHaveLength(1);
+    expect(preview).toContain('aria-hidden="true"');
+    expect(preview).toContain('focusable="false"');
+    expect(preview).not.toContain('role="img"');
+    expect(preview).not.toContain("aria-label={preview.overview.cashFlowSummary}");
   });
 });

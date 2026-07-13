@@ -224,7 +224,12 @@ export function LandingPage() {
       </section>
 
       <section aria-label="Product capability evidence" className="relative z-10 border-y border-border bg-card/55 backdrop-blur-xl">
-        <LandingStagger className="container grid sm:grid-cols-2 xl:grid-cols-4" itemClassName="h-full">
+        <LandingStagger
+          as="ul"
+          ariaLabel="Verified product capabilities"
+          className="container grid sm:grid-cols-2 xl:grid-cols-4"
+          itemClassName="h-full"
+        >
           {trustSignals.map((signal) => {
             const Icon = signal.icon;
             return (
@@ -252,7 +257,12 @@ export function LandingPage() {
             One workflow carries the same profile from inputs to comparison, then keeps the reasoning attached to the result.
           </p>
         </LandingReveal>
-        <LandingStagger className="mt-12 grid gap-5 lg:grid-cols-3" itemClassName="h-full">
+        <LandingStagger
+          as="ol"
+          ariaLabel="Financial twin workflow"
+          className="mt-12 grid gap-5 lg:grid-cols-3"
+          itemClassName="h-full"
+        >
           {journey.map((step) => {
             const Icon = step.icon;
             return (
@@ -262,7 +272,7 @@ export function LandingPage() {
                     <span className="flex size-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary shadow-glow">
                       <Icon className="size-5" aria-hidden="true" />
                     </span>
-                    <span className="text-sm font-black tabular-nums text-muted-foreground">{step.number}</span>
+                    <span aria-hidden="true" className="text-sm font-black tabular-nums text-muted-foreground">{step.number}</span>
                   </div>
                   <h3 className="mt-10 text-xl font-black">{step.title}</h3>
                   <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">{step.body}</p>
@@ -295,7 +305,12 @@ export function LandingPage() {
               assumptions, and the limits of the available information.
             </p>
           </LandingReveal>
-          <LandingStagger className="grid gap-3" itemClassName="h-full">
+          <LandingStagger
+            as="ol"
+            ariaLabel="NOVA evidence sequence"
+            className="grid gap-3"
+            itemClassName="h-full"
+          >
             {novaEvidence.map((item, index) => {
               const Icon = item.icon;
               return (
@@ -325,24 +340,30 @@ export function LandingPage() {
             The included scenario library covers these decisions against the same financial profile, so trade-offs stay comparable.
           </p>
         </LandingReveal>
-        <LandingStagger className="mt-10 grid gap-5 lg:grid-cols-3" itemClassName="h-full">
+        <LandingStagger
+          as="ul"
+          ariaLabel="Supported decision groups"
+          className="mt-10 grid gap-5 lg:grid-cols-3"
+          itemClassName="h-full"
+        >
           {decisionGroups.map((group) => (
             <Card key={group.label} interactive className="h-full border-positive/10 bg-card/80">
               <CardContent className="flex h-full flex-col p-6">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">{group.label}</p>
                 <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">{group.description}</p>
-                <div className="mt-6 grid gap-2">
+                <ul aria-label={`${group.label} scenarios`} className="mt-6 grid gap-2">
                   {group.items.map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="group/link flex min-h-11 items-center justify-between rounded-xl border border-border bg-muted/35 px-4 text-sm font-bold transition-[transform,background-color,border-color] duration-[var(--motion-fast)] hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none"
-                    >
-                      {item.label}
-                      <ArrowRight className="size-4 text-muted-foreground transition-transform duration-[var(--motion-fast)] group-hover/link:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />
-                    </Link>
+                    <li key={item.label}>
+                      <Link
+                        href={item.href}
+                        className="group/link flex min-h-11 items-center justify-between rounded-xl border border-border bg-muted/35 px-4 text-sm font-bold transition-[transform,background-color,border-color] duration-[var(--motion-fast)] hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none"
+                      >
+                        {item.label}
+                        <ArrowRight className="size-4 text-muted-foreground transition-transform duration-[var(--motion-fast)] group-hover/link:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />
+                      </Link>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </CardContent>
             </Card>
           ))}
@@ -388,7 +409,12 @@ export function LandingPage() {
             <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">FAQ</p>
             <h2 className="mt-4 text-4xl font-black tracking-[-0.04em] sm:text-5xl">Clarity before commitment.</h2>
           </LandingReveal>
-          <LandingStagger className="mt-10 grid gap-4 lg:grid-cols-2" itemClassName="h-full">
+          <LandingStagger
+            as="ul"
+            ariaLabel="Frequently asked questions"
+            className="mt-10 grid gap-4 lg:grid-cols-2"
+            itemClassName="h-full"
+          >
             {faq.map((item) => (
               <Card key={item.question} className="h-full bg-background/60">
                 <CardContent className="p-6">

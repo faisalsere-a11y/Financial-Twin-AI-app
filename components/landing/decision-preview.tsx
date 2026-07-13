@@ -34,10 +34,8 @@ export function getLandingTabDestination(currentIndex: number, key: string, item
 
   switch (key) {
     case "ArrowRight":
-    case "ArrowDown":
       return (currentIndex + 1) % itemCount;
     case "ArrowLeft":
-    case "ArrowUp":
       return (currentIndex - 1 + itemCount) % itemCount;
     case "Home":
       return 0;
@@ -150,7 +148,12 @@ export function DecisionPreview() {
               </div>
             </div>
             <p className="sr-only">{preview.overview.cashFlowSummary}</p>
-            <svg viewBox="0 0 560 190" role="img" aria-label={preview.overview.cashFlowSummary} className="h-44 w-full overflow-visible">
+            <svg
+              viewBox="0 0 560 190"
+              aria-hidden="true"
+              focusable="false"
+              className="h-44 w-full overflow-visible"
+            >
               {[38, 76, 114, 152].map((y) => (
                 <line key={y} x1="18" x2="542" y1={y} y2={y} stroke="hsl(var(--border))" strokeWidth="1" />
               ))}

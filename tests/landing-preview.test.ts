@@ -44,7 +44,7 @@ describe("landing decision preview", () => {
     expect(buildLandingPreview("missing").scenario.id).toBe("scenario-start-investment");
   });
 
-  it("moves preview tab focus with arrows, Home, and End", async () => {
+  it("moves preview tab focus with horizontal arrows, Home, and End", async () => {
     const { getLandingTabDestination } = await import("../components/landing/decision-preview");
 
     expect(getLandingTabDestination(0, "ArrowRight", 3)).toBe(1);
@@ -52,6 +52,8 @@ describe("landing decision preview", () => {
     expect(getLandingTabDestination(0, "ArrowLeft", 3)).toBe(2);
     expect(getLandingTabDestination(1, "Home", 3)).toBe(0);
     expect(getLandingTabDestination(1, "End", 3)).toBe(2);
+    expect(getLandingTabDestination(1, "ArrowUp", 3)).toBeNull();
+    expect(getLandingTabDestination(1, "ArrowDown", 3)).toBeNull();
     expect(getLandingTabDestination(1, "Enter", 3)).toBeNull();
     expect(getLandingTabDestination(0, "ArrowRight", 0)).toBeNull();
   });

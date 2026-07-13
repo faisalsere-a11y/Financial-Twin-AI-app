@@ -13,29 +13,33 @@ type LandingRevealProps = {
 
 type LandingStaggerProps = LandingRevealProps & {
   itemClassName?: string;
+  as?: "div" | "ul" | "ol";
+  ariaLabel?: string;
 };
 
 export function LandingReveal({ children, className }: LandingRevealProps) {
   return <Reveal className={className}>{children}</Reveal>;
 }
 
-export function LandingStagger({ children, className, itemClassName }: LandingStaggerProps) {
+export function LandingStagger({ children, className, itemClassName, as = "div", ariaLabel }: LandingStaggerProps) {
   const items = Children.toArray(children);
+  const itemAs = as === "div" ? "div" : "li";
+  const StaticItem = itemAs;
 
   return (
-    <Stagger className={className}>
+    <Stagger as={as} aria-label={ariaLabel} className={className}>
       {items.map((child, index) => {
         const key = isValidElement(child) && child.key !== null ? child.key : index;
         const wrapperClassName = cn("min-w-0", itemClassName);
 
         return index < MAX_STAGGER_ITEMS ? (
-          <StaggerItem key={key} className={wrapperClassName}>
+          <StaggerItem as={itemAs} key={key} className={wrapperClassName}>
             {child}
           </StaggerItem>
         ) : (
-          <div key={key} className={wrapperClassName}>
+          <StaticItem key={key} className={wrapperClassName}>
             {child}
-          </div>
+          </StaticItem>
         );
       })}
     </Stagger>
