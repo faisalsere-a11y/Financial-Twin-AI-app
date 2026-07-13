@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compareScenario } from "../lib/financial/engine";
 import { sampleProfile, scenarioLibrary } from "../lib/financial/sample-data";
@@ -56,5 +56,14 @@ describe("landing decision preview", () => {
     expect(getLandingTabDestination(1, "ArrowDown", 3)).toBeNull();
     expect(getLandingTabDestination(1, "Enter", 3)).toBeNull();
     expect(getLandingTabDestination(0, "ArrowRight", 0)).toBeNull();
+  });
+
+  it("keeps large-screen capability separators on the semantic list items", () => {
+    const source = readFileSync("components/landing/landing-page.tsx", "utf8");
+
+    expect(source).toContain(
+      'itemClassName="border-b border-border xl:border-b-0 xl:border-l xl:first:border-l-0"'
+    );
+    expect(source).not.toMatch(/<div[^>]*xl:first:border-l-0/);
   });
 });

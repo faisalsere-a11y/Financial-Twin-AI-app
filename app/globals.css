@@ -299,6 +299,13 @@
     max-width: none !important;
   }
 
+  .report-print-root .report-motion-surface {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
   .report-print-root *,
   .report-print-root *::before,
   .report-print-root *::after {

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useForm, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, ArrowRight, CheckCircle2, Database, ShieldCheck } from "lucide-react";
@@ -13,6 +14,7 @@ import { Select, SelectItem } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { NovaOrb } from "@/components/brand/nova-orb";
 import { AppPageHeader } from "@/components/layout/app-shell";
+import { Stagger, StaggerItem } from "@/components/motion/reveal";
 import { calculateFinancialTwin } from "@/lib/financial/engine";
 import {
   onboardingSchema,
@@ -22,6 +24,7 @@ import {
   type OnboardingValues
 } from "@/lib/profile/onboarding";
 import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
+import { motionTokens, revealVariants } from "@/lib/motion/variants";
 import { cn, formatCurrency, formatPercent } from "@/lib/utils";
 
 type FieldProps = {
@@ -57,6 +60,7 @@ export function OnboardingWizard() {
 
 function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<typeof useFinancialProfile> }) {
   const router = useRouter();
+  const shouldReduceMotion = useReducedMotion() === true;
   const { profile, source, subject, savedAt, isLoaded, save } = activeProfile;
   const hydratedSubject = useRef<string | null>(null);
   const [step, setStep] = useState(0);
@@ -115,16 +119,16 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
   });
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto min-w-0 max-w-7xl">
       <AppPageHeader
         title="Build your financial twin"
         description="Turn income, outflow, debt, assets, goals, and risk comfort into one inspectable financial model."
       />
 
-      <div className="mb-6 rounded-2xl border border-primary/20 bg-primary/10 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
-        <div className="flex items-start gap-3">
+      <div className="mb-6 min-w-0 rounded-2xl border border-primary/20 bg-primary/10 p-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 items-start gap-3">
           <Database className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-black text-foreground">Browser-saved model</p>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               {source === "saved" ? "Editing the profile previously saved on this device." : "Starting from the bundled sample profile."} No bank connection or background synchronization is implied.
@@ -136,11 +140,11 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
         </p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
-        <Card className="overflow-visible">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
+        <Card className="min-w-0 overflow-visible">
           <CardHeader className="gap-5 border-b border-border p-5 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">Step {step + 1} of {onboardingSteps.length}</p>
                 <CardTitle className="mt-2 text-2xl normal-case tracking-tight">{onboardingSteps[step]?.title}</CardTitle>
                 <p className="mt-1 text-sm text-muted-foreground">{onboardingSteps[step]?.summary}</p>
@@ -172,8 +176,21 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
           </CardHeader>
 
           <CardContent className="p-5 sm:p-6">
-            <form onSubmit={submit} noValidate className="grid gap-7">
-              {step === 0 && (
+            <form onSubmit={submit} noValidate className="grid min-w-0 gap-7">
+              <AnimatePresence initial={false} mode="wait">
+                <motion.div
+                  key={onboardingSteps[step]?.id ?? step}
+                  className="min-w-0"
+                  initial={shouldReduceMotion ? false : "hidden"}
+                  animate="visible"
+                  exit={{ opacity: 0, transition: { duration: 0 } }}
+                  variants={revealVariants}
+                  transition={{
+                    duration: shouldReduceMotion ? 0 : motionTokens.standard,
+                    ease: motionTokens.ease
+                  }}
+                >
+                  {step === 0 && (
                 <fieldset className="grid gap-5 md:grid-cols-2">
                   <legend className="sr-only">Profile and household context</legend>
                   <div className="flex flex-col gap-2">
@@ -198,18 +215,18 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
                     <Input id="children" type="number" min={0} inputMode="numeric" aria-invalid={Boolean(errorFor("children"))} aria-describedby={describedBy("children")} {...numberRegistration("children")} />
                   </FormField>
                 </fieldset>
-              )}
+                  )}
 
-              {step === 1 && (
+                  {step === 1 && (
                 <fieldset className="grid gap-5 md:grid-cols-2">
                   <legend className="sr-only">Income</legend>
                   <FormField name="salary" label="Monthly salary" error={errorFor("salary")}><Input id="salary" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("salary"))} aria-describedby={describedBy("salary")} {...numberRegistration("salary")} /></FormField>
                   <FormField name="bonuses" label="Annual bonuses" error={errorFor("bonuses")}><Input id="bonuses" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("bonuses"))} aria-describedby={describedBy("bonuses")} {...numberRegistration("bonuses")} /></FormField>
                   <FormField name="monthlyIncome" label="Total monthly income" hint="Include salary, the monthly share of bonuses, and reliable other income." error={errorFor("monthlyIncome")}><Input id="monthlyIncome" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("monthlyIncome"))} aria-describedby={describedBy("monthlyIncome", true)} {...numberRegistration("monthlyIncome")} /></FormField>
                 </fieldset>
-              )}
+                  )}
 
-              {step === 2 && (
+                  {step === 2 && (
                 <fieldset className="grid gap-5 md:grid-cols-2">
                   <legend className="sr-only">Monthly outflow</legend>
                   <FormField name="housing" label="Housing" error={errorFor("housing")}><Input id="housing" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("housing"))} aria-describedby={describedBy("housing")} {...numberRegistration("housing")} /></FormField>
@@ -217,9 +234,9 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
                   <FormField name="subscriptions" label="Subscriptions" error={errorFor("subscriptions")}><Input id="subscriptions" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("subscriptions"))} aria-describedby={describedBy("subscriptions")} {...numberRegistration("subscriptions")} /></FormField>
                   <FormField name="insurance" label="Insurance" error={errorFor("insurance")}><Input id="insurance" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("insurance"))} aria-describedby={describedBy("insurance")} {...numberRegistration("insurance")} /></FormField>
                 </fieldset>
-              )}
+                  )}
 
-              {step === 3 && (
+                  {step === 3 && (
                 <fieldset className="grid gap-5 md:grid-cols-2">
                   <legend className="sr-only">Debt and assets</legend>
                   <FormField name="loanBalance" label="Personal loan balance" error={errorFor("loanBalance")}><Input id="loanBalance" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("loanBalance"))} aria-describedby={describedBy("loanBalance")} {...numberRegistration("loanBalance")} /></FormField>
@@ -229,9 +246,9 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
                   <FormField name="savings" label="Cash savings" error={errorFor("savings")}><Input id="savings" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("savings"))} aria-describedby={describedBy("savings")} {...numberRegistration("savings")} /></FormField>
                   <FormField name="investments" label="Investments" error={errorFor("investments")}><Input id="investments" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("investments"))} aria-describedby={describedBy("investments")} {...numberRegistration("investments")} /></FormField>
                 </fieldset>
-              )}
+                  )}
 
-              {step === 4 && (
+                  {step === 4 && (
                 <fieldset className="grid gap-5 md:grid-cols-2">
                   <legend className="sr-only">Goals and risk comfort</legend>
                   <FormField name="emergencyFund" label="Emergency fund allocated" error={errorFor("emergencyFund")}><Input id="emergencyFund" type="number" min={0} inputMode="decimal" aria-invalid={Boolean(errorFor("emergencyFund"))} aria-describedby={describedBy("emergencyFund")} {...numberRegistration("emergencyFund")} /></FormField>
@@ -241,7 +258,9 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
                     <Select id="riskTolerance" aria-invalid={Boolean(errorFor("riskTolerance"))} aria-describedby={describedBy("riskTolerance", true)} {...form.register("riskTolerance")}><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="High">High</SelectItem></Select>
                   </FormField>
                 </fieldset>
-              )}
+                  )}
+                </motion.div>
+              </AnimatePresence>
 
               {status && (
                 <div aria-live="polite" role={status.kind === "error" ? "alert" : "status"} className={status.kind === "error" ? "rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive" : "rounded-xl border border-positive/25 bg-positive/10 p-3 text-sm text-positive"}>
@@ -263,30 +282,34 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
           </CardContent>
         </Card>
 
-        <aside aria-labelledby="model-review-title" className="xl:sticky xl:top-24">
-          <Card className="border-primary/20 bg-gradient-to-br from-primary/10 via-card to-positive/5">
+        <aside aria-labelledby="model-review-title" className="min-w-0 xl:sticky xl:top-24">
+          <Card className="min-w-0 border-primary/20 bg-gradient-to-br from-primary/10 via-card to-positive/5">
             <CardHeader>
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <NovaOrb className="size-9" />
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">Live calculation</p>
                   <CardTitle id="model-review-title" className="mt-1 text-lg normal-case tracking-tight">Review your model</CardTitle>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="grid gap-3">
-              {[
-                ["Monthly income", formatCurrency(twin.monthlyIncome, previewProfile.currency)],
-                ["Monthly outflow", formatCurrency(twin.monthlyExpenses, previewProfile.currency)],
-                ["Monthly surplus", formatCurrency(twin.monthlySurplus, previewProfile.currency)],
-                ["Debt payment ratio", formatPercent(twin.debtRatio)],
-                ["Emergency runway", `${twin.emergencyFundMonths.toFixed(1)} months`]
-              ].map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background/60 px-3 py-3">
-                  <span className="text-xs font-bold text-muted-foreground">{label}</span>
-                  <span className="text-sm font-black tabular-nums text-foreground">{value}</span>
-                </div>
-              ))}
+              <Stagger className="grid min-w-0 gap-3">
+                {[
+                  ["Monthly income", formatCurrency(twin.monthlyIncome, previewProfile.currency)],
+                  ["Monthly outflow", formatCurrency(twin.monthlyExpenses, previewProfile.currency)],
+                  ["Monthly surplus", formatCurrency(twin.monthlySurplus, previewProfile.currency)],
+                  ["Debt payment ratio", formatPercent(twin.debtRatio)],
+                  ["Emergency runway", `${twin.emergencyFundMonths.toFixed(1)} months`]
+                ].map(([label, value]) => (
+                  <StaggerItem key={label} className="min-w-0">
+                    <div className="flex min-w-0 items-center justify-between gap-4 rounded-xl border border-border bg-background/60 px-3 py-3">
+                      <span className="min-w-0 text-xs font-bold text-muted-foreground">{label}</span>
+                      <span className="shrink-0 text-sm font-black tabular-nums text-foreground">{value}</span>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </Stagger>
               <div className="mt-1 rounded-xl border border-positive/20 bg-positive/10 p-4">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-xs font-black uppercase tracking-[0.12em] text-positive">Financial health</span>

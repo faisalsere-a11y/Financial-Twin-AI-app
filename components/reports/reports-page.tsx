@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { CalendarRange, FileSpreadsheet, Printer } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartFrame } from "@/components/data/chart-frame";
 import { AppPageHeader } from "@/components/layout/app-shell";
+import { Stagger, StaggerItem } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { calculateFinancialTwin, compareScenario } from "@/lib/financial/engine";
 import { sampleScenario } from "@/lib/financial/sample-data";
 import { chartTheme, chartTooltipStyle } from "@/lib/presentation/chart-theme";
+import { motionTokens, revealVariants } from "@/lib/motion/variants";
 import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import { twinToCsv } from "@/lib/reports/export";
 import { formatCurrency } from "@/lib/utils";
@@ -30,6 +33,7 @@ const reportOptions: Array<{
 
 export function ReportsPage() {
   const { profile } = useFinancialProfile();
+  const shouldReduceMotion = useReducedMotion() === true;
   const [selectedReport, setSelectedReport] = useState<ReportPeriod>("annual");
   const [exportStatus, setExportStatus] = useState("");
   const twin = calculateFinancialTwin(profile);
@@ -69,7 +73,7 @@ export function ReportsPage() {
   };
 
   return (
-    <div className="report-print-root mx-auto max-w-[1280px]">
+    <div className="report-print-root mx-auto min-w-0 max-w-[1280px]">
       <AppPageHeader
         eyebrow="Active financial model"
         title="Report workspace"
@@ -92,49 +96,66 @@ export function ReportsPage() {
         {exportStatus}
       </p>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <ChartFrame
-          title={`${selectedOption.title} — net worth and savings`}
-          description={`Engine-projected balances across ${selectedOption.months} ${selectedOption.months === 1 ? "month" : "months"}.`}
-          summary={chartSummary}
-        >
-          <div className="h-80" aria-hidden="true">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={visibleTimeline} margin={{ left: 4, right: 8, top: 8 }}>
-                <CartesianGrid stroke={chartTheme.grid} vertical={false} />
-                <XAxis dataKey="month" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
-                <YAxis
-                  stroke={chartTheme.axis}
-                  tickLine={false}
-                  axisLine={false}
-                  width={64}
-                  tickFormatter={(value) => new Intl.NumberFormat("en", { notation: "compact" }).format(value)}
-                />
-                <Tooltip contentStyle={chartTooltipStyle} />
-                <Area
-                  type="monotone"
-                  dataKey="netWorth"
-                  name="Net worth"
-                  stroke={chartTheme.current}
-                  fill={chartTheme.current}
-                  fillOpacity={0.14}
-                  strokeWidth={3}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="savings"
-                  name="Savings"
-                  stroke={chartTheme.after}
-                  fill={chartTheme.after}
-                  fillOpacity={0.08}
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartFrame>
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <AnimatePresence initial={false} mode="wait">
+          <motion.div
+            key={selectedReport}
+            className="report-motion-surface min-w-0"
+            initial={shouldReduceMotion ? false : "hidden"}
+            animate="visible"
+            exit={{ opacity: 0, transition: { duration: 0 } }}
+            variants={revealVariants}
+            transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+          >
+            <ChartFrame
+              title={`${selectedOption.title} — net worth and savings`}
+              description={`Engine-projected balances across ${selectedOption.months} ${selectedOption.months === 1 ? "month" : "months"}.`}
+              summary={chartSummary}
+              className="min-w-0"
+            >
+              <div className="h-80 min-w-0" aria-hidden="true">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={visibleTimeline} margin={{ left: 4, right: 8, top: 8 }}>
+                    <CartesianGrid stroke={chartTheme.grid} vertical={false} />
+                    <XAxis dataKey="month" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
+                    <YAxis
+                      stroke={chartTheme.axis}
+                      tickLine={false}
+                      axisLine={false}
+                      width={64}
+                      tickFormatter={(value) => new Intl.NumberFormat("en", { notation: "compact" }).format(value)}
+                    />
+                    <Tooltip contentStyle={chartTooltipStyle} />
+                    <Area
+                      type="monotone"
+                      dataKey="netWorth"
+                      name="Net worth"
+                      stroke={chartTheme.current}
+                      fill={chartTheme.current}
+                      fillOpacity={0.14}
+                      strokeWidth={3}
+                      isAnimationActive={!shouldReduceMotion}
+                      animationDuration={motionTokens.deliberate * 1000}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="savings"
+                      name="Savings"
+                      stroke={chartTheme.after}
+                      fill={chartTheme.after}
+                      fillOpacity={0.08}
+                      strokeWidth={2}
+                      isAnimationActive={!shouldReduceMotion}
+                      animationDuration={motionTokens.deliberate * 1000}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartFrame>
+          </motion.div>
+        </AnimatePresence>
 
-        <Card className="no-print">
+        <Card className="no-print min-w-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 normal-case tracking-normal">
               <CalendarRange className="size-5 text-primary" aria-hidden="true" />
@@ -172,30 +193,38 @@ export function ReportsPage() {
         </Card>
       </div>
 
-      <section aria-labelledby="report-summary-title" className="mt-6 grid gap-4 md:grid-cols-3">
+      <section aria-labelledby="report-summary-title" className="mt-6 min-w-0">
         <h2 id="report-summary-title" className="sr-only">Selected report summary</h2>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Starting net worth</p>
-            <p className="mt-2 text-2xl font-black">{formatCurrency(twin.netWorth, profile.currency)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Ending net worth</p>
-            <p className="mt-2 text-2xl font-black">{formatCurrency(endingPoint.netWorth, profile.currency)}</p>
-            <p className="mt-1 text-sm text-muted-foreground">at month {endingPoint.month}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Average monthly cash flow</p>
-            <p className="mt-2 text-2xl font-black">{formatCurrency(averageCashFlow, profile.currency)}</p>
-          </CardContent>
-        </Card>
+        <Stagger className="report-motion-surface grid min-w-0 gap-4 md:grid-cols-3">
+          <StaggerItem className="report-motion-surface h-full min-w-0">
+            <Card className="h-full min-w-0">
+              <CardContent className="pt-6">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Starting net worth</p>
+                <p className="mt-2 text-2xl font-black">{formatCurrency(twin.netWorth, profile.currency)}</p>
+              </CardContent>
+            </Card>
+          </StaggerItem>
+          <StaggerItem className="report-motion-surface h-full min-w-0">
+            <Card className="h-full min-w-0">
+              <CardContent className="pt-6">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Ending net worth</p>
+                <p className="mt-2 text-2xl font-black">{formatCurrency(endingPoint.netWorth, profile.currency)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">at month {endingPoint.month}</p>
+              </CardContent>
+            </Card>
+          </StaggerItem>
+          <StaggerItem className="report-motion-surface h-full min-w-0">
+            <Card className="h-full min-w-0">
+              <CardContent className="pt-6">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Average monthly cash flow</p>
+                <p className="mt-2 text-2xl font-black">{formatCurrency(averageCashFlow, profile.currency)}</p>
+              </CardContent>
+            </Card>
+          </StaggerItem>
+        </Stagger>
       </section>
 
-      <Card className="mt-6">
+      <Card className="mt-6 min-w-0">
         <CardHeader>
           <CardTitle>{selectedOption.title} evidence</CardTitle>
           <p className="text-sm text-muted-foreground">Monthly engine outputs for the selected reporting horizon.</p>

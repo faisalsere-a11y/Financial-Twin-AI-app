@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useMutation } from "@tanstack/react-query";
 import { useForm, type FieldPath } from "react-hook-form";
 import { z } from "zod";
@@ -11,6 +12,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, RotateCcw, ShieldCheck, Slider
 import { NovaOrb } from "@/components/brand/nova-orb";
 import { ChartFrame } from "@/components/data/chart-frame";
 import { AppPageHeader } from "@/components/layout/app-shell";
+import { Stagger, StaggerItem } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +26,7 @@ import type { ScenarioComparison, ScenarioInput } from "@/lib/financial/types";
 import { useFinancialProfile } from "@/lib/profile/use-financial-profile";
 import { chartTheme, chartTooltipStyle } from "@/lib/presentation/chart-theme";
 import { buildNovaDecisionView, type AdvisorSource } from "@/lib/presentation/nova-decision";
+import { motionTokens, revealVariants } from "@/lib/motion/variants";
 import { cn, formatCurrency, formatPercent } from "@/lib/utils";
 
 const isGitHubPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "true";
@@ -117,6 +120,7 @@ export function SimulationCenter() {
 
 function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<typeof useFinancialProfile> }) {
   const { profile, source, subject } = activeProfile;
+  const shouldReduceMotion = useReducedMotion() === true;
   const activeSubjectRef = useRef(subject);
   const activeRequestRef = useRef<AbortController | null>(null);
   const requestGenerationRef = useRef(0);
@@ -232,7 +236,7 @@ function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<
   const numberField = (name: FieldPath<SimulationForm>) => form.register(name, { valueAsNumber: true });
 
   return (
-    <div className="mx-auto max-w-[1440px]">
+    <div className="mx-auto min-w-0 max-w-[1440px]">
       <AppPageHeader
         eyebrow="Decision lab"
         title="Compare the next move before money moves"
@@ -240,8 +244,8 @@ function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<
         action={<Button variant="outline" onClick={resetLab}><RotateCcw data-icon="inline-start" aria-hidden="true" />Reset lab</Button>}
       />
 
-      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-border bg-card/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="mb-6 flex min-w-0 flex-col gap-3 rounded-2xl border border-border bg-card/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <p className="text-sm font-black">Active model: {profile.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">{source === "saved" ? "Saved in this browser" : "Bundled sample profile"} · {profile.currency} · No bank synchronization</p>
         </div>
@@ -251,8 +255,8 @@ function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr] xl:items-start">
-        <Card>
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] xl:items-start">
+        <Card className="min-w-0">
           <CardHeader className="border-b border-border">
             <CardTitle className="text-lg normal-case tracking-tight">{mode === "library" ? "Choose a decision" : "Custom car builder"}</CardTitle>
             <p className="text-sm leading-6 text-muted-foreground">{mode === "library" ? "Every option is backed by the existing scenario library." : "Adjust financing, ownership costs, resale, and income change."}</p>
@@ -260,25 +264,26 @@ function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<
           <CardContent className="p-5 sm:p-6">
             {mode === "library" ? (
               <div className="grid gap-4">
-                <div role="radiogroup" aria-label="Scenario library" className="grid gap-3 sm:grid-cols-2">
+                <Stagger role="radiogroup" aria-label="Scenario library" className="grid min-w-0 gap-3 sm:grid-cols-2">
                   {scenarioLibrary.map((scenario) => (
-                    <button
-                      key={scenario.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selectedScenario.id === scenario.id}
-                      onClick={() => selectScenario(scenario)}
-                      className={cn(
-                        "min-h-36 rounded-2xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        selectedScenario.id === scenario.id ? "border-primary/35 bg-primary/10" : "border-border bg-background/55 hover:bg-muted/70"
-                      )}
-                    >
-                      <span className="font-black text-foreground">{scenario.name}</span>
-                      <span className="mt-2 block text-sm tabular-nums text-muted-foreground">{formatCurrency(scenario.upfrontCost, profile.currency)} upfront · {scenario.durationMonths} months</span>
-                      <span className="mt-3 flex flex-wrap gap-1.5">{scenario.tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary">{tag}</Badge>)}</span>
-                    </button>
+                    <StaggerItem key={scenario.id} className="h-full min-w-0">
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={selectedScenario.id === scenario.id}
+                        onClick={() => selectScenario(scenario)}
+                        className={cn(
+                          "h-full min-h-36 w-full min-w-0 rounded-2xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          selectedScenario.id === scenario.id ? "border-primary/35 bg-primary/10" : "border-border bg-background/55 hover:bg-muted/70"
+                        )}
+                      >
+                        <span className="font-black text-foreground">{scenario.name}</span>
+                        <span className="mt-2 block text-sm tabular-nums text-muted-foreground">{formatCurrency(scenario.upfrontCost, profile.currency)} upfront · {scenario.durationMonths} months</span>
+                        <span className="mt-3 flex min-w-0 flex-wrap gap-1.5">{scenario.tags.slice(0, 2).map((tag) => <Badge key={tag} variant="secondary">{tag}</Badge>)}</span>
+                      </button>
+                    </StaggerItem>
                   ))}
-                </div>
+                </Stagger>
                 <div className="rounded-xl border border-border bg-muted/50 p-4">
                   <p className="text-xs font-black uppercase tracking-[0.12em] text-muted-foreground">Selected model delta</p>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
@@ -315,49 +320,68 @@ function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<
           </CardContent>
         </Card>
 
-        <div className="grid gap-6">
+        <div className="grid min-w-0 gap-6">
           {status && (
             <div aria-live="polite" role={status.kind === "error" ? "alert" : "status"} className={status.kind === "error" ? "rounded-xl border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive" : status.kind === "success" ? "rounded-xl border border-positive/25 bg-positive/10 p-4 text-sm text-positive" : "rounded-xl border border-primary/25 bg-primary/10 p-4 text-sm text-foreground"}>
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
                 <span>{status.message}</span>
                 {status.kind === "error" && mutation.variables && <Button type="button" size="sm" variant="outline" onClick={() => mutation.mutate(mutation.variables)}>Retry analysis</Button>}
               </div>
             </div>
           )}
 
-          {mutation.isPending ? (
-            <Card aria-live="polite">
-              <CardContent className="flex min-h-80 flex-col items-center justify-center gap-4 text-center">
-                <NovaOrb className="size-14 animate-pulse" />
-                <div><p className="font-black">Recalculating the financial twin</p><p className="mt-2 text-sm text-muted-foreground">Comparing cash flow, debt, reserves, risk, health, and timeline.</p></div>
-              </CardContent>
-            </Card>
-          ) : result && nova ? (
-            <>
+          <AnimatePresence initial={false} mode="wait">
+            {mutation.isPending ? (
+              <motion.div
+                key="pending"
+                className="min-w-0"
+                initial={shouldReduceMotion ? false : "hidden"}
+                animate="visible"
+                exit={{ opacity: 0, transition: { duration: 0 } }}
+                variants={revealVariants}
+                transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+              >
+                <Card aria-live="polite" className="min-w-0">
+                  <CardContent className="flex min-h-80 min-w-0 flex-col items-center justify-center gap-4 text-center">
+                    <NovaOrb className="size-14 motion-safe:animate-pulse" />
+                    <div className="min-w-0"><p className="font-black">Recalculating the financial twin</p><p className="mt-2 text-sm text-muted-foreground">Comparing cash flow, debt, reserves, risk, health, and timeline.</p></div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : result && nova ? (
+              <motion.div
+                key={`result-${result.comparison.scenario.id}`}
+                className="grid min-w-0 gap-6"
+                initial={shouldReduceMotion ? false : "hidden"}
+                animate="visible"
+                exit={{ opacity: 0, transition: { duration: 0 } }}
+                variants={revealVariants}
+                transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+              >
               <ChartFrame
                 title="Current and after-decision net worth"
                 description={`${result.comparison.scenario.name} · 12-month deterministic projection`}
                 summary={chartSummary}
                 action={<div className="flex gap-3 text-xs"><span className="text-primary">Current</span><span className="text-positive">After</span></div>}
               >
-                <div className="h-72" aria-label="Current and after decision net worth">
+                <div className="h-72 min-w-0" aria-label="Current and after decision net worth">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
                       <CartesianGrid stroke={chartTheme.grid} vertical={false} />
                       <XAxis dataKey="month" stroke={chartTheme.axis} tickLine={false} axisLine={false} />
                       <YAxis stroke={chartTheme.axis} tickLine={false} axisLine={false} />
                       <Tooltip contentStyle={chartTooltipStyle} />
-                      <Area type="monotone" dataKey="current" stroke={chartTheme.current} fill={chartTheme.current} fillOpacity={0.1} />
-                      <Area type="monotone" dataKey="after" stroke={chartTheme.after} fill={chartTheme.after} fillOpacity={0.12} />
+                      <Area type="monotone" dataKey="current" stroke={chartTheme.current} fill={chartTheme.current} fillOpacity={0.1} isAnimationActive={!shouldReduceMotion} animationDuration={motionTokens.deliberate * 1000} />
+                      <Area type="monotone" dataKey="after" stroke={chartTheme.after} fill={chartTheme.after} fillOpacity={0.12} isAnimationActive={!shouldReduceMotion} animationDuration={motionTokens.deliberate * 1000} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </ChartFrame>
 
-              <Card>
+              <Card className="min-w-0">
                 <CardHeader className="border-b border-border">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <CardTitle className="flex items-center gap-2 text-lg normal-case tracking-tight"><NovaOrb className="size-8" />NOVA decision brief</CardTitle>
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+                    <CardTitle className="flex min-w-0 items-center gap-2 text-lg normal-case tracking-tight"><NovaOrb className="size-8" />NOVA decision brief</CardTitle>
                     <Badge variant={nova.provenance.source === "openai" ? "blue" : "secondary"}>{nova.provenance.label}</Badge>
                   </div>
                 </CardHeader>
@@ -393,7 +417,7 @@ function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="min-w-0">
                 <CardHeader><CardTitle className="text-sm normal-case tracking-tight">Current versus after</CardTitle></CardHeader>
                 <CardContent>
                   <Table>
@@ -409,15 +433,26 @@ function SessionSimulationCenter({ activeProfile }: { activeProfile: ReturnType<
                   </Table>
                 </CardContent>
               </Card>
-            </>
-          ) : (
-            <Card>
-              <CardContent className="flex min-h-80 flex-col items-center justify-center gap-4 text-center">
-                <NovaOrb className="size-14" />
-                <div><p className="font-black">Ready for a decision comparison</p><p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">Choose a supported scenario or customize a car purchase. No result is saved or applied to your profile unless you explicitly edit the financial model.</p></div>
-              </CardContent>
-            </Card>
-          )}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty"
+                className="min-w-0"
+                initial={shouldReduceMotion ? false : "hidden"}
+                animate="visible"
+                exit={{ opacity: 0, transition: { duration: 0 } }}
+                variants={revealVariants}
+                transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+              >
+                <Card className="min-w-0">
+                  <CardContent className="flex min-h-80 min-w-0 flex-col items-center justify-center gap-4 text-center">
+                    <NovaOrb className="size-14" />
+                    <div className="min-w-0"><p className="font-black">Ready for a decision comparison</p><p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">Choose a supported scenario or customize a car purchase. No result is saved or applied to your profile unless you explicitly edit the financial model.</p></div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {mutation.isError && !status && <div role="alert" className="rounded-xl border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive"><AlertTriangle className="mr-2 inline size-4" aria-hidden="true" />The analysis could not be completed.</div>}
           {mutation.isSuccess && <p className="sr-only"><CheckCircle2 aria-hidden="true" />Analysis completed successfully.</p>}

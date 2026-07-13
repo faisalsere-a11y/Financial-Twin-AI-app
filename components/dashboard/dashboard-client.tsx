@@ -473,10 +473,10 @@ function GoalTracker({ profile }: { profile: FinancialProfile }) {
   const goals = forecastGoalCompletion(profile).slice(0, 4);
 
   return (
-    <Card>
+    <Card className="h-full min-w-0">
       <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle>Goal tracker</CardTitle>
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <CardTitle className="min-w-0">Goal tracker</CardTitle>
           <Button asChild size="sm" variant="ghost"><Link href="/goals">View all</Link></Button>
         </div>
       </CardHeader>
@@ -512,9 +512,9 @@ function GoalTracker({ profile }: { profile: FinancialProfile }) {
 
 function DecisionHistory() {
   return (
-    <Card>
+    <Card className="h-full min-w-0">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex min-w-0 items-center gap-2">
           <History className="size-5 text-primary" aria-hidden="true" />
           Decision workspace
         </CardTitle>

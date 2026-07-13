@@ -228,12 +228,12 @@ export function LandingPage() {
           as="ul"
           ariaLabel="Verified product capabilities"
           className="container grid sm:grid-cols-2 xl:grid-cols-4"
-          itemClassName="h-full"
+          itemClassName="border-b border-border xl:border-b-0 xl:border-l xl:first:border-l-0"
         >
           {trustSignals.map((signal) => {
             const Icon = signal.icon;
             return (
-              <div key={signal.label} className="flex h-full gap-3 border-b border-border px-1 py-5 sm:px-5 xl:border-b-0 xl:border-l xl:first:border-l-0">
+              <div key={signal.label} className="flex h-full min-w-0 gap-3 px-1 py-5 sm:px-5">
                 <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.08] text-primary">
                   <Icon className="size-4" aria-hidden="true" />
                 </span>

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { NovaOrb } from "@/components/brand/nova-orb";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import {
   authPresentation,
   getAuthDefaults,
@@ -134,13 +135,13 @@ export function AuthCard({ mode }: { mode: AuthMode }) {
   const nameError = form.formState.errors.name?.message;
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+    <main className="relative isolate min-h-screen overflow-x-clip px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.12),transparent_34%),radial-gradient(circle_at_bottom_right,hsl(var(--positive)/0.08),transparent_30%)]" />
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-6 lg:min-h-[calc(100vh-6rem)] lg:grid-cols-[minmax(0,1.05fr)_minmax(25rem,0.78fr)] lg:gap-12">
-        <section aria-labelledby="auth-trust-title" className="rounded-2xl border border-border bg-card/55 p-5 shadow-glass backdrop-blur sm:p-7 lg:border-0 lg:bg-transparent lg:p-4 lg:shadow-none lg:backdrop-blur-none">
-          <div className="flex items-center gap-3">
+      <Reveal className="mx-auto grid min-h-[calc(100vh-4rem)] w-full min-w-0 max-w-6xl items-center gap-6 lg:min-h-[calc(100vh-6rem)] lg:grid-cols-[minmax(0,1.05fr)_minmax(25rem,0.78fr)] lg:gap-12">
+        <section aria-labelledby="auth-trust-title" className="min-w-0 rounded-2xl border border-border bg-card/55 p-5 shadow-glass backdrop-blur sm:p-7 lg:border-0 lg:bg-transparent lg:p-4 lg:shadow-none lg:backdrop-blur-none">
+          <div className="flex min-w-0 items-center gap-3">
             <NovaOrb className="size-11 shrink-0" />
-            <div>
+            <div className="min-w-0">
               <Badge variant="blue">Financial Twin AI</Badge>
               <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Decision intelligence for your money</p>
             </div>
@@ -156,15 +157,17 @@ export function AuthCard({ mode }: { mode: AuthMode }) {
             </p>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-10">
+          <Stagger className="mt-6 grid min-w-0 gap-3 sm:grid-cols-2 lg:mt-10">
             {trustSignals.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="rounded-xl border border-border bg-background/65 p-4">
-                <Icon className="size-5 text-primary" aria-hidden="true" />
-                <h3 className="mt-3 text-sm font-black">{title}</h3>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
-              </div>
+              <StaggerItem key={title} className="h-full min-w-0">
+                <div className="h-full min-w-0 rounded-xl border border-border bg-background/65 p-4">
+                  <Icon className="size-5 text-primary" aria-hidden="true" />
+                  <h3 className="mt-3 text-sm font-black">{title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
+                </div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
 
           <p className="mt-5 flex items-start gap-2 text-xs leading-5 text-muted-foreground lg:mt-8">
             <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
@@ -172,7 +175,7 @@ export function AuthCard({ mode }: { mode: AuthMode }) {
           </p>
         </section>
 
-        <Card className="glass-panel-strong w-full border-primary/20 bg-card/90 shadow-glow">
+        <Card className="glass-panel-strong w-full min-w-0 border-primary/20 bg-card/90 shadow-glow">
           <CardHeader className="gap-3 p-6 sm:p-8 sm:pb-5">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">{presentation.eyebrow}</p>
@@ -239,7 +242,7 @@ export function AuthCard({ mode }: { mode: AuthMode }) {
               )}
             </form>
 
-            <nav aria-label="Authentication options" className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5 text-sm">
+            <nav aria-label="Authentication options" className="mt-6 flex min-w-0 flex-wrap items-center justify-between gap-3 border-t border-border pt-5 text-sm">
               {mode === "login" ? (
                 <>
                   <Link href="/signup" className="font-bold text-foreground hover:text-primary">Create account</Link>
@@ -251,7 +254,7 @@ export function AuthCard({ mode }: { mode: AuthMode }) {
             </nav>
           </CardContent>
         </Card>
-      </div>
+      </Reveal>
     </main>
   );
 }
