@@ -3,6 +3,7 @@ import type { SelectStateOption } from "@/lib/ui/select-state";
 
 export type CollectedSelectOption = SelectStateOption & {
   domIdPart: string;
+  hidden: boolean;
   label: React.ReactNode;
   nativeLabel: string;
 };
@@ -10,6 +11,7 @@ export type CollectedSelectOption = SelectStateOption & {
 type CandidateProps = {
   children?: React.ReactNode;
   disabled?: boolean;
+  hidden?: boolean;
   label?: React.ReactNode;
   value?: unknown;
 };
@@ -32,7 +34,7 @@ function identityToDomId(identity: string): string {
 
 export function collectSelectOptions(children: React.ReactNode): CollectedSelectOption[] {
   const options: CollectedSelectOption[] = [];
-  const identityCounts = new Map<string, number>();
+  const seenValues = new Set<string>();
 
   const visit = (nodes: React.ReactNode, inheritedDisabled = false) => {
     React.Children.forEach(nodes, (child) => {
@@ -48,19 +50,17 @@ export function collectSelectOptions(children: React.ReactNode): CollectedSelect
         const label = props.children ?? props.label ?? fallbackValue;
         const nativeLabel = reactNodeText(label);
         const value = props.value === undefined ? nativeLabel : String(props.value);
-        const identityBase = child.key === null
-          ? `value:${value}`
-          : `key:${String(child.key)}|value:${value}`;
-        const occurrence = identityCounts.get(identityBase) ?? 0;
-        identityCounts.set(identityBase, occurrence + 1);
-        const identity = `${identityBase}#${occurrence}`;
+        if (seenValues.has(value)) return;
+        seenValues.add(value);
+        const identity = `value:${value}`;
         options.push({
           identity,
           domIdPart: identityToDomId(identity),
           value,
           label,
           nativeLabel,
-          disabled: inheritedDisabled || Boolean(props.disabled)
+          disabled: inheritedDisabled || Boolean(props.disabled),
+          hidden: Boolean(props.hidden)
         });
         return;
       }
@@ -79,6 +79,12 @@ export function collectSelectOptions(children: React.ReactNode): CollectedSelect
 
 export function selectOptionSignature(options: readonly CollectedSelectOption[]): string {
   return JSON.stringify(
-    options.map((option) => [option.identity, option.value, option.disabled, option.nativeLabel])
+    options.map((option) => [
+      option.identity,
+      option.value,
+      option.disabled,
+      option.hidden,
+      option.nativeLabel
+    ])
   );
 }

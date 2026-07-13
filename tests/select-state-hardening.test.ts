@@ -11,12 +11,13 @@ import {
 const option = (
   identity: string,
   value: string,
-  disabled = false
-): SelectStateOption => ({ identity, value, disabled });
+  disabled = false,
+  hidden = false
+): SelectStateOption => ({ identity, value, disabled, hidden });
 
 describe("select state hardening", () => {
   it("preserves an explicit empty default value", () => {
-    const options = [option("paid", "paid"), option("empty", "")];
+    const options = [option("paid", "paid"), option("empty", "", false, true)];
 
     expect(resolveInitialValue("", options)).toBe("");
     expect(resolveInitialValue(undefined, options)).toBe("paid");
@@ -53,6 +54,15 @@ describe("select state hardening", () => {
     expect(reconcileActiveIdentity("disabled", "disabled", options)).toBe("selected");
     expect(reconcileActiveIdentity("disabled", "missing", options)).toBe("selected");
     expect(reconcileActiveIdentity("disabled", "missing", [option("only", "only", true)])).toBeNull();
+  });
+
+  it("never makes a hidden selected option active", () => {
+    const options = [
+      option("placeholder", "", false, true),
+      option("ready", "ready")
+    ];
+
+    expect(reconcileActiveIdentity("placeholder", "", options)).toBe("ready");
   });
 });
 
@@ -108,15 +118,30 @@ describe("select option collection", () => {
     expect(option?.nativeLabel).toBe("Visible children");
   });
 
-  it("keeps keyed duplicate identities stable across reorder", () => {
+  it("canonicalizes duplicate values by keeping only the first supported option", () => {
     const first = React.createElement("option", { key: "first", value: "same" }, "First");
     const second = React.createElement("option", { key: "second", value: "same" }, "Second");
 
     const before = collectSelectOptions([first, second]);
     const after = collectSelectOptions([second, first]);
 
-    expect(after.map(({ identity }) => identity).sort()).toEqual(before.map(({ identity }) => identity).sort());
-    expect(new Set(before.map(({ domIdPart }) => domIdPart)).size).toBe(2);
+    expect(before).toHaveLength(1);
+    expect(after).toHaveLength(1);
+    expect(before[0]?.nativeLabel).toBe("First");
+    expect(after[0]?.nativeLabel).toBe("Second");
+    expect(after[0]?.identity).toBe(before[0]?.identity);
+  });
+
+  it("retains hidden native options in canonical data", () => {
+    const options = collectSelectOptions([
+      React.createElement("option", { key: "placeholder", value: "", hidden: true }, "Choose one"),
+      React.createElement("option", { key: "ready", value: "ready" }, "Ready")
+    ]);
+
+    expect(options.map(({ value, hidden }) => ({ value, hidden }))).toEqual([
+      { value: "", hidden: true },
+      { value: "ready", hidden: false }
+    ]);
   });
 
   it("omits opaque option factories so native and custom collections share a boundary", () => {

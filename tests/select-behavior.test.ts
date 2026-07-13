@@ -39,6 +39,9 @@ describe("premium select", () => {
     expect(source).toContain("const getValue = valueDescriptor.get.bind(node)");
     expect(source).toContain("reconcileSelectedValue(");
     expect(source).toContain("optionSignature");
+    expect(source).toContain("nativeSelect.value = selectedValueRef.current");
+    expect(source).toContain("if (isControlledRef.current)");
+    expect(source).not.toContain("if (!form || isControlled) return");
     expect(source.match(/<select/g)).toHaveLength(1);
   });
 
@@ -50,5 +53,13 @@ describe("premium select", () => {
     expect(source).toContain('document.addEventListener("pointerdown"');
     expect(source).toContain("AnimatePresence");
     expect(source).toContain("useReducedMotion");
+  });
+
+  it("wires exactly one selected custom option and preserves native hidden options", () => {
+    const source = readFileSync("components/ui/select.tsx", "utf8");
+
+    expect(source).toContain("const selected = option.identity === selectedOption?.identity");
+    expect(source).toContain("const visibleOptions");
+    expect(source).toContain("hidden={option.hidden}");
   });
 });

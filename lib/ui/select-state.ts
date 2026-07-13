@@ -4,6 +4,7 @@ export type SelectStateOption = {
   identity: string;
   value: string;
   disabled: boolean;
+  hidden?: boolean;
 };
 
 export type SelectValue = string | number | readonly string[] | null | undefined;
@@ -49,12 +50,14 @@ export function reconcileActiveIdentity(
   options: readonly SelectStateOption[]
 ): string | null {
   const currentOption = options.find((option) => option.identity === activeIdentity);
-  if (currentOption && !currentOption.disabled) return currentOption.identity;
+  if (currentOption && !currentOption.disabled && !currentOption.hidden) {
+    return currentOption.identity;
+  }
 
   const selectedOption = options.find(
-    (option) => option.value === selectedValue && !option.disabled
+    (option) => option.value === selectedValue && !option.disabled && !option.hidden
   );
   return selectedOption?.identity
-    ?? options.find((option) => !option.disabled)?.identity
+    ?? options.find((option) => !option.disabled && !option.hidden)?.identity
     ?? null;
 }
