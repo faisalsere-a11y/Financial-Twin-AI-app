@@ -53,6 +53,17 @@ describe("UI foundation", () => {
     expect(html).not.toContain("border-white");
   });
 
+  it("renders the premium select with semantic surfaces and form fallback", () => {
+    const select = readFileSync("components/ui/select.tsx", "utf8");
+
+    expect(select).toContain("bg-popover");
+    expect(select).toContain("border-border");
+    expect(select).toContain("shadow-xl");
+    expect(select).toContain("max-h-72");
+    expect(select).toContain("<select");
+    expect(select).not.toContain("border-white");
+  });
+
   it("keeps badge and progress surfaces theme semantic", () => {
     const badge = readFileSync("components/ui/badge.tsx", "utf8");
     const progress = readFileSync("components/ui/progress.tsx", "utf8");
