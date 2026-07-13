@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const source = fs.readFileSync(
-  path.join(process.cwd(), "components/goals/goals-page.tsx"),
-  "utf8"
-);
+function readSource(relativePath: string) {
+  const filePath = path.join(process.cwd(), relativePath);
+  return fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : "";
+}
+
+const source = readSource("components/goals/goals-page.tsx");
+const editor = readSource("components/goals/goal-editor.tsx");
+const progressRing = readSource("components/goals/goal-progress-ring.tsx");
+const celebration = readSource("components/goals/goal-celebration.tsx");
 
 describe("goal portfolio experience", () => {
   it("renders only active-profile goals and exposes a real model-edit path", () => {
@@ -31,10 +36,95 @@ describe("goal portfolio experience", () => {
   });
 
   it("gives goal progress and status accessible names", () => {
-    expect(source).toContain('role="progressbar"');
-    expect(source).toContain("aria-valuenow");
-    expect(source).toContain("aria-valuemin={0}");
-    expect(source).toContain("aria-valuemax={100}");
+    expect(source).toContain("<GoalProgressRing");
+    expect(progressRing).toContain('role="progressbar"');
+    expect(progressRing).toContain("aria-valuenow");
+    expect(progressRing).toContain("aria-valuemin={0}");
+    expect(progressRing).toContain("aria-valuemax={100}");
+    expect(progressRing).toContain("useReducedMotion");
+    expect(progressRing).toContain("motionTokens.deliberate");
+    expect(source).toContain("funding milestones");
+    expect(source).toContain("milestones.map");
     expect(source).toContain('aria-live="polite"');
+  });
+
+  it("edits every goal field through validated persistent updates", () => {
+    for (const field of [
+      "goal-name",
+      "goal-category",
+      "goal-target-amount",
+      "goal-current-amount",
+      "goal-monthly-contribution",
+      "goal-target-date",
+      "goal-priority"
+    ]) {
+      expect(editor).toContain(`htmlFor="${field}"`);
+      expect(editor).toContain(`id="${field}"`);
+    }
+
+    expect(editor).toContain("goalUpdateSchema.safeParse");
+    expect(editor).toContain("aria-invalid");
+    expect(editor).toContain("savingRef.current");
+    expect(editor).toContain('role="alert"');
+    expect(editor).toContain('aria-busy={isSaving}');
+    expect(editor).toContain("noValidate");
+    expect(source).toContain("updateGoal(profile, goalId, values)");
+    expect(source).toContain("save(nextProfile)");
+  });
+
+  it("provides a keyboard-contained editor with safe close and focus restoration", () => {
+    expect(editor).toContain('role="dialog"');
+    expect(editor).toContain('aria-modal="true"');
+    expect(editor).toContain('aria-labelledby="goal-editor-title"');
+    expect(editor).toContain('aria-describedby="goal-editor-description"');
+    expect(editor).toContain("focusableSelector");
+    expect(editor).toContain('event.key === "Tab"');
+    expect(editor).toContain('event.key === "Escape"');
+    expect(editor).toContain("previousFocusRef");
+    expect(editor).toContain("document.body.style.overflow");
+    expect(editor).toContain('import { createPortal } from "react-dom"');
+    expect(editor).toContain("return createPortal(");
+    expect(editor).toContain("document.body.children");
+    expect(editor).toContain("backgroundElement.inert = true");
+    expect(editor).toContain('backgroundElement.setAttribute("aria-hidden", "true")');
+    expect(editor).toContain("blockCompetingPaletteShortcut");
+    expect(editor).toContain('(event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k"');
+    expect(editor).toContain("event.stopImmediatePropagation()");
+    expect(editor).toContain('window.addEventListener("keydown", blockCompetingPaletteShortcut, { capture: true })');
+    expect(editor).toContain("event.target === event.currentTarget");
+    expect(source).toContain("inert={Boolean(selectedGoal)}");
+  });
+
+  it("keeps profile subject and revision boundaries while exposing explicit update states", () => {
+    expect(source).toContain("subject, savedAt, isLoaded, save");
+    expect(source).toContain('const profileKey = `${subject}:${savedAt ?? "sample"}`');
+    expect(source).toContain("key={profileKey}");
+    expect(source).toContain("Loading goal portfolio");
+    expect(source).toContain('notice.type === "error"');
+    expect(source).toContain('notice.type === "success"');
+    expect(source).toContain('role={notice.type === "error" ? "alert" : "status"}');
+    expect(source).toContain("profile.goals.length === 0");
+  });
+
+  it("reorders goals explicitly and celebrates only a saved user completion transition", () => {
+    expect(source).toContain("moveGoal(profile, goalId, direction)");
+    expect(source).toContain("Move ${goal.name} earlier");
+    expect(source).toContain("Move ${goal.name} later");
+    expect(source).toContain("pendingReorderFocusRef");
+    expect(source).toContain("onGoalMoved(goalId, direction)");
+    expect(source).toContain('id={`move-goal-${goal.id}-earlier`}');
+    expect(source).toContain('id={`move-goal-${goal.id}-later`}');
+    expect(source).toContain("target?.focus()");
+    expect(source).toContain("crossedGoalCompletion(beforeGoal, afterGoal)");
+    expect(source).toMatch(/save\(nextProfile\)[\s\S]*?onGoalCompleted/);
+    expect(source).toContain("<GoalCelebration");
+    expect(celebration).toContain("useReducedMotion() === true");
+    expect(celebration).toContain("!shouldReduceMotion");
+    expect(celebration).toContain("@keyframes goal-particle");
+    expect(celebration).toContain("prefers-reduced-motion: reduce");
+    expect(celebration).toContain("var(--positive)");
+    expect(celebration).not.toContain("var(--success)");
+    expect(celebration).toContain('role="status"');
+    expect(celebration).toContain('aria-live="polite"');
   });
 });
