@@ -1,5 +1,8 @@
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { AnimatedNumber } from "../components/motion/animated-number";
 import { interpolateNumber } from "../lib/motion/number";
 
 describe("motion foundation", () => {
@@ -29,9 +32,16 @@ describe("motion foundation", () => {
   });
 
   it("keeps explicit reduced-motion branches in every animated primitive", () => {
-    expect(animatedNumber).toMatch(
-      /if \(shouldReduceMotion\) \{\s*animatedValue\.set\(value\);\s*return;/
+    const numberEffect = animatedNumber.slice(
+      animatedNumber.indexOf("useBrowserLayoutEffect(() =>"),
+      animatedNumber.indexOf("const formatValue")
     );
+    expect(animatedNumber).toContain("React.useState(value)");
+    expect(animatedNumber).toContain('window.matchMedia("(prefers-reduced-motion: reduce)").matches');
+    expect(numberEffect.indexOf("if (prefersReducedMotion)")).toBeLessThan(
+      numberEffect.indexOf("animatedValue.set(from)")
+    );
+    expect(animatedNumber).toContain("if (!hasAnimatedRef.current)");
     expect(pageTransition).toContain('initial={shouldReduceMotion ? false : "hidden"}');
     expect(pageTransition).toContain("duration: shouldReduceMotion ? 0 : motionTokens.standard");
     expect(reveal.match(/initial=\{shouldReduceMotion \? false : "hidden"\}/g)).toHaveLength(2);
@@ -42,11 +52,35 @@ describe("motion foundation", () => {
 
   it("reserves the final formatted number width without duplicate spoken output", () => {
     expect(animatedNumber).toContain("const finalValue = formatValue(value);");
-    expect(animatedNumber).toContain('className="invisible"');
-    expect(animatedNumber).toContain('className="absolute inset-0"');
     expect(animatedNumber.match(/aria-hidden="true"/g)).toHaveLength(2);
     expect(animatedNumber.match(/className="sr-only"/g)).toHaveLength(1);
     expect(animatedNumber).toContain('<span className="sr-only">{finalValue}</span>');
+  });
+
+  it("server-renders the final value in both visual layers and one semantic layer", () => {
+    const markup = renderToStaticMarkup(
+      createElement(AnimatedNumber, {
+        value: 12_345,
+        from: 0,
+        format: (value) => `SAR ${Math.round(value).toLocaleString("en-US")}`
+      })
+    );
+    const hiddenLayers = markup.match(/<span aria-hidden="true"[^>]*>[^<]*<\/span>/g) ?? [];
+
+    expect(hiddenLayers).toHaveLength(2);
+    expect(hiddenLayers.every((layer) => layer.includes("SAR 12,345"))).toBe(true);
+    expect(markup.match(/SAR 12,345/g)).toHaveLength(3);
+    expect(markup).not.toContain("SAR 0");
+    expect(markup.match(/class="sr-only"/g)).toHaveLength(1);
+  });
+
+  it("uses opt-in same-cell grid layers for wrap-safe numbers", () => {
+    expect(animatedNumber).toContain("wrap?: boolean");
+    expect(animatedNumber).toContain("wrap = false");
+    expect(animatedNumber).toContain("inline-grid min-w-0 max-w-full");
+    expect(animatedNumber).toContain("col-start-1 row-start-1 min-w-0 max-w-full");
+    expect(animatedNumber).toContain("[overflow-wrap:anywhere]");
+    expect(animatedNumber).toContain('wrap ? wrapLayerClass : "absolute inset-0"');
   });
 
   it("uses fast timing for direct hover and press feedback", () => {

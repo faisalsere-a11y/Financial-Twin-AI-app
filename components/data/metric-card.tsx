@@ -29,7 +29,8 @@ export function MetricCard({
           <AnimatedNumber
             value={metric.rawValue}
             format={format ?? (() => metric.value)}
-            className="max-w-full text-xl sm:text-2xl"
+            wrap
+            className="min-w-0 max-w-full text-xl sm:text-2xl"
           />
         </p>
         <p className={cn("mt-2 break-words text-xs font-semibold", toneClasses[metric.tone].split(" ")[1])}>{metric.detail}</p>

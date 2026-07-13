@@ -597,7 +597,12 @@ export function MiniMetric({ label, value, numericValue, format, suffix }: MiniM
         {numericValue === undefined ? (
           <span className="min-w-0 break-words">{value}</span>
         ) : (
-          <AnimatedNumber value={numericValue} format={format} className="max-w-full" />
+          <AnimatedNumber
+            value={numericValue}
+            format={format}
+            wrap
+            className="min-w-0 max-w-full"
+          />
         )}
         {suffix ? <span className="shrink-0 whitespace-nowrap text-[0.82em] text-muted-foreground">{suffix}</span> : null}
       </p>

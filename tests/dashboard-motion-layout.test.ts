@@ -29,6 +29,10 @@ describe("dashboard motion and layout", () => {
     expect(shell).toContain("suffix?: string");
     expect(shell).toContain("<AnimatedNumber");
     expect(shell).toContain("shrink-0 whitespace-nowrap");
+    expect(shell).toMatch(/<AnimatedNumber[\s\S]*?wrap[\s\S]*?className="min-w-0 max-w-full"/);
+    const miniMetric = shell.slice(shell.indexOf("export function MiniMetric"), shell.indexOf("export function AppPageHeader"));
+    expect(miniMetric.match(/\{suffix\}/g)).toHaveLength(1);
+    expect(miniMetric).not.toMatch(/<AnimatedNumber[^>]*suffix=/);
     expect(identityHeader).toMatch(
       /label="Obligations"[\s\S]*?numericValue=\{overview\.flow\.monthlyDebtPayment\}[\s\S]*?suffix="\/mo"/
     );
@@ -38,6 +42,7 @@ describe("dashboard motion and layout", () => {
     expect(metricCard).toContain("AnimatedNumber");
     expect(metricCard).toContain("MotionCard");
     expect(metricCard).toContain("interactive={false}");
+    expect(metricCard).toMatch(/<AnimatedNumber[\s\S]*?wrap[\s\S]*?className="min-w-0 max-w-full text-xl sm:text-2xl"/);
     expect(dashboard).toContain("<Stagger");
     expect(dashboard).toContain("<StaggerItem");
     expect(dashboard).toContain("<Reveal");
