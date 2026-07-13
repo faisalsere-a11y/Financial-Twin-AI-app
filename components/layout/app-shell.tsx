@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { NovaOrb } from "@/components/brand/nova-orb";
+import { FloatingActions } from "@/components/layout/floating-actions";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { motionTokens } from "@/lib/motion/variants";
 import { openCommandPalette } from "@/lib/ui/commands";
@@ -566,15 +567,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="relative min-w-0">{children}</div>
         </main>
       </motion.div>
-      <button
-        type="button"
-        aria-hidden={mobilePresent || undefined}
-        inert={mobilePresent || undefined}
-        onClick={() => openCommandPalette()}
-        className="app-print-hide fixed bottom-4 right-4 hidden rounded-full border border-border bg-card/85 px-3 py-2 text-xs text-muted-foreground shadow-glass backdrop-blur transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:block"
-      >
-        <span className="font-semibold text-foreground">Ctrl K</span> command
-      </button>
+      <FloatingActions unavailable={mobilePresent} />
     </div>
   );
 }

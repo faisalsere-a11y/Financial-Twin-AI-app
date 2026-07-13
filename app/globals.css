@@ -283,7 +283,9 @@
   }
 
   .app-print-hide,
-  .no-print {
+  .no-print,
+  .floating-action-rail,
+  .nova-chat-layer {
     display: none !important;
   }
 
