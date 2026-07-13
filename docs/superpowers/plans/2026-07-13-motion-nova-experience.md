@@ -835,7 +835,7 @@ Expected: all tests pass, TypeScript and ESLint emit no errors, and diff check i
 - [ ] **Step 2: Verify protected engines remain unchanged**
 
 ```powershell
-git diff HEAD~11 -- lib/financial/engine.ts lib/financial/investments.ts lib/reports/export.ts
+git diff 560fc46 -- lib/financial/engine.ts lib/financial/investments.ts lib/reports/export.ts
 ```
 
 Expected: no diff unless a separately documented, test-proven fix was explicitly approved.
