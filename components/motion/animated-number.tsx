@@ -55,11 +55,13 @@ export function AnimatedNumber({
       })}${suffix}`,
     [decimals, format, prefix, suffix]
   );
+  const finalValue = formatValue(value);
 
   return (
-    <span className={cn("inline-block tabular-nums", className)} {...props}>
-      <span aria-hidden="true">{formatValue(displayValue)}</span>
-      <span className="sr-only">{formatValue(value)}</span>
+    <span className={cn("relative inline-block whitespace-nowrap tabular-nums", className)} {...props}>
+      <span aria-hidden="true" className="invisible">{finalValue}</span>
+      <span aria-hidden="true" className="absolute inset-0">{formatValue(displayValue)}</span>
+      <span className="sr-only">{finalValue}</span>
     </span>
   );
 }
