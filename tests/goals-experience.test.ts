@@ -95,6 +95,19 @@ describe("goal portfolio experience", () => {
     expect(source).toContain("inert={Boolean(selectedGoal)}");
   });
 
+  it("restores background isolation before saved-state announcements are published", () => {
+    expect(editor).toMatch(/import \{[\s\S]*?useLayoutEffect[\s\S]*?\} from "react"/);
+    const isolationLifecycle = editor.match(
+      /useLayoutEffect\(\(\) => \{[\s\S]*?\n  \}, \[returnFocusId\]\);/
+    )?.[0] ?? "";
+
+    expect(isolationLifecycle).toContain("document.body.children");
+    expect(isolationLifecycle).toContain("return () => {");
+    expect(isolationLifecycle).toContain("backgroundElement.inert = inert");
+    expect(isolationLifecycle).toContain('backgroundElement.removeAttribute("aria-hidden")');
+    expect(isolationLifecycle).toContain('backgroundElement.setAttribute("aria-hidden", ariaHidden)');
+  });
+
   it("keeps profile subject and revision boundaries while exposing explicit update states", () => {
     expect(source).toContain("subject, savedAt, isLoaded, save");
     expect(source).toContain('const profileKey = `${subject}:${savedAt ?? "sample"}`');

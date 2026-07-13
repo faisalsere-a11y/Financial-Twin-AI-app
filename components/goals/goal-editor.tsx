@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -114,7 +114,7 @@ export function GoalEditor({ goal, onClose, onSave, returnFocusId }: GoalEditorP
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const savingRef = useRef(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialogElement = dialogRef.current;
     if (!dialogElement) return;
 
