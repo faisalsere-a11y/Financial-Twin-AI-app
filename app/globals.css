@@ -37,6 +37,9 @@
     --input: 218 22% 82%;
     --ring: var(--brand);
     --radius: 0.875rem;
+    --motion-fast: 160ms;
+    --motion-standard: 260ms;
+    --motion-deliberate: 420ms;
     color-scheme: light;
   }
 
@@ -159,6 +162,88 @@
     background-image: linear-gradient(hsl(var(--foreground) / 0.055) 1px, transparent 1px);
     background-size: 100% 9px;
     mask-image: linear-gradient(to bottom, transparent, black 12%, black 82%, transparent);
+  }
+}
+
+@keyframes motion-shimmer {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+@keyframes motion-glow-sweep {
+  from {
+    opacity: 0;
+    transform: translate3d(-130%, 0, 0) skewX(-18deg);
+  }
+  20%,
+  80% {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(130%, 0, 0) skewX(-18deg);
+  }
+}
+
+@layer utilities {
+  .shimmer {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .shimmer::after {
+    animation: motion-shimmer 1.6s linear infinite;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      hsl(var(--foreground) / 0.08) 45%,
+      hsl(var(--foreground) / 0.14) 50%,
+      transparent 80%
+    );
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    transform: translate3d(-100%, 0, 0);
+  }
+
+  .glow-sweep {
+    isolation: isolate;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .glow-sweep::after {
+    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.34), transparent);
+    content: "";
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    transform: translate3d(-130%, 0, 0) skewX(-18deg);
+    z-index: -1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .motion-safe-lift {
+    transition: transform var(--motion-standard) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .motion-safe-lift:hover {
+    transform: translate3d(0, -0.125rem, 0) scale(1.01);
+  }
+
+  .motion-safe-press:active {
+    transform: scale(0.99);
+  }
+
+  .glow-sweep:hover::after {
+    animation: motion-glow-sweep var(--motion-deliberate) cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
