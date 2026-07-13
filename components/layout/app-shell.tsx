@@ -593,7 +593,7 @@ export function MiniMetric({ label, value, numericValue, format, suffix }: MiniM
       <p className="min-w-0 break-words text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-1 text-xs font-black tabular-nums text-foreground sm:text-sm">
+      <p className="mt-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-1 text-xs font-black tabular-nums text-foreground sm:text-sm">
         {numericValue === undefined ? (
           <span className="min-w-0 break-words">{value}</span>
         ) : (

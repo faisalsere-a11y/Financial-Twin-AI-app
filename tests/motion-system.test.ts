@@ -22,20 +22,29 @@ describe("motion foundation", () => {
     expect(numberMotion.interpolateNumber(200, 100, 0.25)).toBe(175);
   });
 
-  it("keeps the longest formatted endpoint reserved across descending updates", () => {
-    expect(numberMotion).toHaveProperty("reserveFormattedEndpoint");
-    if (!("reserveFormattedEndpoint" in numberMotion)) return;
+  it("reserves measured height at one width and resets at a different width", () => {
+    expect(numberMotion).toHaveProperty("reserveMeasuredBlock");
+    if (!("reserveMeasuredBlock" in numberMotion)) return;
 
-    const reserveFormattedEndpoint = numberMotion.reserveFormattedEndpoint as (
-      currentReservation: string,
-      nextEndpoint: string
-    ) => string;
-    let reservation = reserveFormattedEndpoint("SAR 0", "SAR 1,234,567");
+    const reserveMeasuredBlock = numberMotion.reserveMeasuredBlock as (
+      currentReservation: { width: number; height: number } | null,
+      measuredWidth: number,
+      measuredHeight: number
+    ) => { width: number; height: number };
+    const equalCodepointCompact = "SAR 111";
+    const equalCodepointWrapped = "SAR WWW";
+    expect(Array.from(equalCodepointCompact)).toHaveLength(Array.from(equalCodepointWrapped).length);
 
-    expect(reservation).toBe("SAR 1,234,567");
-    reservation = reserveFormattedEndpoint(reservation, "SAR 42");
-    expect(reservation).toBe("SAR 1,234,567");
-    expect(reserveFormattedEndpoint(reservation, "SAR 12,345,678")).toBe("SAR 12,345,678");
+    let reservation = reserveMeasuredBlock(null, 180, 24);
+    reservation = reserveMeasuredBlock(reservation, 180, 48);
+    expect(reservation).toEqual({ width: 180, height: 48 });
+
+    reservation = reserveMeasuredBlock(reservation, 180, 20);
+    expect(reservation).toEqual({ width: 180, height: 48 });
+
+    reservation = reserveMeasuredBlock(reservation, 240, 20);
+    expect(reservation).toEqual({ width: 240, height: 20 });
+    expect(numberMotion).not.toHaveProperty("reserveFormattedEndpoint");
   });
 
   it("wires user motion preferences around the app and route content", () => {
@@ -68,9 +77,9 @@ describe("motion foundation", () => {
 
   it("reserves the final formatted number width without duplicate spoken output", () => {
     expect(animatedNumber).toContain("const finalValue = formatValue(value);");
-    expect(animatedNumber).toContain("reserveFormattedEndpoint");
-    expect(animatedNumber).toContain("reservationValue");
-    expect(animatedNumber.match(/aria-hidden="true"/g)).toHaveLength(3);
+    expect(animatedNumber).toContain("reserveMeasuredBlock");
+    expect(animatedNumber).not.toContain("reserveFormattedEndpoint");
+    expect(animatedNumber.match(/aria-hidden="true"/g)).toHaveLength(2);
     expect(animatedNumber.match(/className="sr-only"/g)).toHaveLength(1);
     expect(animatedNumber).toContain('<span className="sr-only">{finalValue}</span>');
   });
@@ -95,14 +104,14 @@ describe("motion foundation", () => {
   it("uses opt-in same-cell grid layers for wrap-safe numbers", () => {
     expect(animatedNumber).toContain("wrap?: boolean");
     expect(animatedNumber).toContain("wrap = false");
-    expect(animatedNumber).toContain("relative inline-grid min-w-0 max-w-full");
-    expect(animatedNumber).toContain("col-start-1 row-start-1 min-w-0 max-w-full");
+    expect(animatedNumber).toContain("relative grid w-full min-w-0 max-w-full");
+    expect(animatedNumber).toContain("col-start-1 row-start-1 h-auto min-w-0 max-w-full self-start");
     expect(animatedNumber).toContain('const wrapVisualClass = "absolute inset-0 min-w-0 max-w-full"');
     expect(animatedNumber).toContain("[overflow-wrap:anywhere]");
     expect(animatedNumber).toContain('wrap ? wrapVisualClass : "absolute inset-0"');
   });
 
-  it("server-renders wrap sizers as hidden and the visual layer as non-sizing", () => {
+  it("server-renders one intrinsic wrap sizer and one non-sizing visual layer", () => {
     const markup = renderToStaticMarkup(
       createElement(AnimatedNumber, {
         value: 12_345,
@@ -113,10 +122,24 @@ describe("motion foundation", () => {
     );
     const hiddenLayers = markup.match(/<span aria-hidden="true"[^>]*>[^<]*<\/span>/g) ?? [];
 
-    expect(hiddenLayers).toHaveLength(3);
-    expect(hiddenLayers.filter((layer) => layer.includes("invisible"))).toHaveLength(2);
+    expect(hiddenLayers).toHaveLength(2);
+    expect(hiddenLayers.filter((layer) => layer.includes("invisible"))).toHaveLength(1);
     expect(hiddenLayers.filter((layer) => layer.includes("absolute inset-0"))).toHaveLength(1);
+    expect(hiddenLayers.every((layer) => layer.includes("SAR 12,345"))).toBe(true);
     expect(markup.match(/class="sr-only"/g)).toHaveLength(1);
+  });
+
+  it("measures wrap geometry on final changes and observes only wrapper width changes", () => {
+    expect(animatedNumber).toContain("const wrapperRef = React.useRef<HTMLSpanElement>(null)");
+    expect(animatedNumber).toContain("const sizerRef = React.useRef<HTMLSpanElement>(null)");
+    expect(animatedNumber).toContain("wrapper.clientWidth");
+    expect(animatedNumber).toContain("sizer.getBoundingClientRect().height");
+    expect(animatedNumber).toContain('wrapper.style.minHeight = `${reservation.height}px`');
+    expect(animatedNumber).toContain('typeof ResizeObserver === "undefined"');
+    expect(animatedNumber).toContain("if (nextWidth === observedWidth) return");
+    expect(animatedNumber).toContain("observer.observe(wrapper)");
+    expect(animatedNumber).toContain("observer.disconnect()");
+    expect(animatedNumber).not.toContain("setReservationValue");
   });
 
   it("uses fast timing for direct hover and press feedback", () => {

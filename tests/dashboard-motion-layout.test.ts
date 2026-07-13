@@ -29,6 +29,7 @@ describe("dashboard motion and layout", () => {
     expect(shell).toContain("suffix?: string");
     expect(shell).toContain("<AnimatedNumber");
     expect(shell).toContain("shrink-0 whitespace-nowrap");
+    expect(shell).toContain("grid-cols-[minmax(0,1fr)_auto]");
     expect(shell).toMatch(/<AnimatedNumber[\s\S]*?wrap[\s\S]*?className="min-w-0 max-w-full"/);
     const miniMetric = shell.slice(shell.indexOf("export function MiniMetric"), shell.indexOf("export function AppPageHeader"));
     expect(miniMetric.match(/\{suffix\}/g)).toHaveLength(1);

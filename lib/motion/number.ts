@@ -3,8 +3,22 @@ export function interpolateNumber(from: number, to: number, progress: number) {
   return from + (to - from) * clamped;
 }
 
-export function reserveFormattedEndpoint(currentReservation: string, nextEndpoint: string) {
-  return Array.from(nextEndpoint).length > Array.from(currentReservation).length
-    ? nextEndpoint
-    : currentReservation;
+export type MeasuredBlockReservation = Readonly<{
+  width: number;
+  height: number;
+}>;
+
+export function reserveMeasuredBlock(
+  currentReservation: MeasuredBlockReservation | null,
+  measuredWidth: number,
+  measuredHeight: number
+): MeasuredBlockReservation {
+  if (!currentReservation || currentReservation.width !== measuredWidth) {
+    return { width: measuredWidth, height: measuredHeight };
+  }
+
+  return {
+    width: measuredWidth,
+    height: Math.max(currentReservation.height, measuredHeight)
+  };
 }
