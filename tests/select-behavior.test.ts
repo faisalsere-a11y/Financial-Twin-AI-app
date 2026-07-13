@@ -36,7 +36,9 @@ describe("premium select", () => {
     expect(source).toContain('className="sr-only"');
     expect(source).toContain("nativeOnChange?.(event)");
     expect(source).toContain('Object.defineProperty(node, "value"');
-    expect(source).toContain("setUncontrolledValue(String(nextValue))");
+    expect(source).toContain("const getValue = valueDescriptor.get.bind(node)");
+    expect(source).toContain("reconcileSelectedValue(");
+    expect(source).toContain("optionSignature");
     expect(source.match(/<select/g)).toHaveLength(1);
   });
 

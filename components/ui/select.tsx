@@ -4,56 +4,30 @@ import * as React from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, ChevronDown } from "lucide-react";
 import { motionTokens } from "@/lib/motion/variants";
-import { moveSelection, type SelectionKey } from "@/lib/ui/select-state";
+import {
+  collectSelectOptions,
+  selectOptionSignature,
+  type CollectedSelectOption
+} from "@/lib/ui/select-options";
+import {
+  moveSelection,
+  normalizeSelectValue,
+  reconcileActiveIdentity,
+  reconcileSelectedValue,
+  resolveInitialValue,
+  type SelectionKey
+} from "@/lib/ui/select-state";
 import { cn } from "@/lib/utils";
 
 type SelectItemProps = Omit<React.OptionHTMLAttributes<HTMLOptionElement>, "value"> & {
   value: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 };
 
 type SelectProps = Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "children"> & {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onValueChange?: (value: string) => void;
 };
-
-type OptionData = {
-  key: React.Key;
-  value: string;
-  label: React.ReactNode;
-  disabled: boolean;
-};
-
-function stringValue(value: SelectProps["value"] | SelectProps["defaultValue"]): string {
-  if (Array.isArray(value)) return value[0] === undefined ? "" : String(value[0]);
-  return value === undefined || value === null ? "" : String(value);
-}
-
-function collectOptions(children: React.ReactNode): OptionData[] {
-  const options: OptionData[] = [];
-
-  const visit = (nodes: React.ReactNode) => {
-    React.Children.forEach(nodes, (child) => {
-      if (!React.isValidElement(child)) return;
-      if (child.type === React.Fragment) {
-        visit((child.props as { children?: React.ReactNode }).children);
-        return;
-      }
-
-      const props = child.props as Partial<SelectItemProps>;
-      if (props.value === undefined) return;
-      options.push({
-        key: child.key ?? `${props.value}-${options.length}`,
-        value: String(props.value),
-        label: props.children,
-        disabled: Boolean(props.disabled)
-      });
-    });
-  };
-
-  visit(children);
-  return options;
-}
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
   {
@@ -83,16 +57,21 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
   const triggerId = id ?? `select-${generatedId}`;
   const listboxId = `${triggerId}-listbox`;
   const nativeId = `${triggerId}-native`;
-  const options = React.useMemo(() => collectOptions(children), [children]);
-  const initialValue = stringValue(defaultValue) || options[0]?.value || "";
+  const options = React.useMemo(() => collectSelectOptions(children), [children]);
+  const optionSignature = React.useMemo(() => selectOptionSignature(options), [options]);
+  const preferredDefaultValue = normalizeSelectValue(defaultValue);
+  const initialValue = resolveInitialValue(defaultValue, options);
   const isControlled = value !== undefined;
   const isControlledRef = React.useRef(isControlled);
   isControlledRef.current = isControlled;
   const [uncontrolledValue, setUncontrolledValue] = React.useState(initialValue);
-  const selectedValue = isControlled ? stringValue(value) : uncontrolledValue;
+  const selectedValue = isControlled ? (normalizeSelectValue(value) ?? "") : uncontrolledValue;
   const selectedOption = options.find((option) => option.value === selectedValue);
   const [open, setOpen] = React.useState(false);
-  const [activeIndex, setActiveIndex] = React.useState(-1);
+  const [activeIdentity, setActiveIdentity] = React.useState<string | null>(null);
+  const activeOption = options.find(
+    (option) => option.identity === activeIdentity && !option.disabled
+  );
   const shouldReduceMotion = useReducedMotion();
   const rootRef = React.useRef<HTMLDivElement>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
@@ -102,7 +81,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
     focus: HTMLSelectElement["focus"];
   } | null>(null);
   const nativeValueCleanupRef = React.useRef<(() => void) | null>(null);
-  const optionRefs = React.useRef(new Map<number, HTMLDivElement>());
+  const optionsRef = React.useRef(options);
+  optionsRef.current = options;
+  const preferredDefaultValueRef = React.useRef(preferredDefaultValue);
+  preferredDefaultValueRef.current = preferredDefaultValue;
+  const optionRefs = React.useRef(new Map<string, HTMLDivElement>());
 
   const setNativeSelectRef = React.useCallback(
     (node: HTMLSelectElement | null) => {
@@ -122,13 +105,24 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
         const valueDescriptor = ownDescriptor
           ?? Object.getOwnPropertyDescriptor(Object.getPrototypeOf(node), "value");
         if (valueDescriptor?.get && valueDescriptor.set && valueDescriptor.configurable !== false) {
+          const getValue = valueDescriptor.get.bind(node);
+          const setValue = valueDescriptor.set.bind(node);
           Object.defineProperty(node, "value", {
             configurable: true,
             enumerable: valueDescriptor.enumerable,
-            get: () => valueDescriptor.get?.call(node),
+            get: getValue,
             set: (nextValue: string) => {
-              valueDescriptor.set?.call(node, nextValue);
-              if (!isControlledRef.current) setUncontrolledValue(String(nextValue));
+              setValue(nextValue);
+              if (!isControlledRef.current) {
+                const actualValue = String(getValue());
+                setUncontrolledValue(
+                  reconcileSelectedValue(
+                    actualValue,
+                    optionsRef.current,
+                    preferredDefaultValueRef.current
+                  )
+                );
+              }
             }
           });
           nativeValueCleanupRef.current = () => {
@@ -143,19 +137,14 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
     [forwardedRef]
   );
 
-  const enabledIndices = React.useMemo(
-    () => options.flatMap((option, index) => (option.disabled ? [] : [index])),
+  const enabledOptions = React.useMemo(
+    () => options.filter((option) => !option.disabled),
     [options]
   );
 
-  const selectedIndex = options.findIndex((option) => option.value === selectedValue);
-
   const setInitialActiveOption = React.useCallback(() => {
-    const nextIndex = selectedIndex >= 0 && !options[selectedIndex]?.disabled
-      ? selectedIndex
-      : (enabledIndices[0] ?? -1);
-    setActiveIndex(nextIndex);
-  }, [enabledIndices, options, selectedIndex]);
+    setActiveIdentity(reconcileActiveIdentity(null, selectedValue, options));
+  }, [options, selectedValue]);
 
   const closeAndFocus = React.useCallback(() => {
     setOpen(false);
@@ -172,7 +161,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
   );
 
   const chooseOption = React.useCallback(
-    (option: OptionData) => {
+    (option: CollectedSelectOption) => {
       if (disabled || option.disabled) return;
       const nativeSelect = nativeSelectRef.current;
       if (nativeSelect) {
@@ -189,18 +178,20 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
 
   const moveActiveOption = React.useCallback(
     (key: SelectionKey) => {
-      if (enabledIndices.length === 0) {
-        setActiveIndex(-1);
+      if (enabledOptions.length === 0) {
+        setActiveIdentity(null);
         return;
       }
-      const currentEnabledIndex = enabledIndices.indexOf(activeIndex);
+      const currentEnabledIndex = enabledOptions.findIndex(
+        (option) => option.identity === activeIdentity
+      );
       const normalizedCurrent = currentEnabledIndex >= 0
         ? currentEnabledIndex
         : key === "ArrowUp" ? 0 : -1;
-      const nextEnabledIndex = moveSelection(normalizedCurrent, enabledIndices.length, key);
-      setActiveIndex(enabledIndices[nextEnabledIndex] ?? -1);
+      const nextEnabledIndex = moveSelection(normalizedCurrent, enabledOptions.length, key);
+      setActiveIdentity(enabledOptions[nextEnabledIndex]?.identity ?? null);
     },
-    [activeIndex, enabledIndices]
+    [activeIdentity, enabledOptions]
   );
 
   const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -221,9 +212,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
       if (!open) {
         setInitialActiveOption();
         setOpen(true);
-      } else if (activeIndex >= 0) {
-        const option = options[activeIndex];
-        if (option) chooseOption(option);
+      } else if (activeOption) {
+        chooseOption(activeOption);
       }
       return;
     }
@@ -231,12 +221,15 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
       event.preventDefault();
       if (!open) {
         setOpen(true);
-        const currentEnabledIndex = enabledIndices.indexOf(selectedIndex);
+        const initialIdentity = reconcileActiveIdentity(null, selectedValue, options);
+        const currentEnabledIndex = enabledOptions.findIndex(
+          (option) => option.identity === initialIdentity
+        );
         const normalizedCurrent = currentEnabledIndex >= 0
           ? currentEnabledIndex
           : key === "ArrowUp" ? 0 : -1;
-        const nextEnabledIndex = moveSelection(normalizedCurrent, enabledIndices.length, key);
-        setActiveIndex(enabledIndices[nextEnabledIndex] ?? -1);
+        const nextEnabledIndex = moveSelection(normalizedCurrent, enabledOptions.length, key);
+        setActiveIdentity(enabledOptions[nextEnabledIndex]?.identity ?? null);
       } else {
         moveActiveOption(key);
       }
@@ -261,24 +254,35 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
   }, [open]);
 
   React.useEffect(() => {
-    if (!open || activeIndex < 0) return;
-    optionRefs.current.get(activeIndex)?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex, open]);
+    if (isControlled) return;
+    setUncontrolledValue((currentValue) =>
+      reconcileSelectedValue(currentValue, options, preferredDefaultValue)
+    );
+  }, [isControlled, optionSignature, options, preferredDefaultValue]);
 
   React.useEffect(() => {
-    if (isControlled) return;
-    const nativeValue = nativeSelectRef.current?.value;
-    if (nativeValue !== undefined && nativeValue !== uncontrolledValue) {
-      setUncontrolledValue(nativeValue);
-    }
-  }, [isControlled, uncontrolledValue]);
+    if (!open) return;
+    setActiveIdentity((currentIdentity) =>
+      reconcileActiveIdentity(currentIdentity, selectedValue, options)
+    );
+  }, [open, optionSignature, options, selectedValue]);
+
+  React.useEffect(() => {
+    if (!open || !activeOption) return;
+    optionRefs.current.get(activeOption.identity)?.scrollIntoView({ block: "nearest" });
+  }, [activeOption, open]);
 
   React.useEffect(() => {
     const nativeSelect = nativeSelectRef.current;
     const form = nativeSelect?.form;
     if (!form || isControlled) return;
     const handleReset = () => {
-      window.setTimeout(() => setUncontrolledValue(nativeSelect.value), 0);
+      window.setTimeout(
+        () => setUncontrolledValue(
+          resolveInitialValue(preferredDefaultValueRef.current, optionsRef.current)
+        ),
+        0
+      );
     };
     form.addEventListener("reset", handleReset);
     return () => form.removeEventListener("reset", handleReset);
@@ -294,7 +298,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listboxId}
-        aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+        aria-activedescendant={open && activeOption ? `${listboxId}-option-${activeOption.domIdPart}` : undefined}
         aria-describedby={ariaDescribedBy}
         aria-errormessage={ariaErrorMessage}
         aria-invalid={ariaInvalid}
@@ -337,23 +341,23 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
             transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
             className="absolute left-0 right-0 z-50 mt-2 max-h-72 origin-top overflow-y-auto overscroll-contain rounded-xl border border-border bg-popover/95 p-1.5 text-popover-foreground shadow-xl backdrop-blur-xl"
           >
-            {options.map((option, index) => {
+            {options.map((option) => {
               const selected = option.value === selectedValue;
-              const active = index === activeIndex;
+              const active = option.identity === activeOption?.identity;
               return (
                 <motion.div
                   ref={(node) => {
-                    if (node) optionRefs.current.set(index, node);
-                    else optionRefs.current.delete(index);
+                    if (node) optionRefs.current.set(option.identity, node);
+                    else optionRefs.current.delete(option.identity);
                   }}
-                  id={`${listboxId}-option-${index}`}
-                  key={option.key}
+                  id={`${listboxId}-option-${option.domIdPart}`}
+                  key={option.identity}
                   role="option"
                   aria-selected={selected}
                   aria-disabled={option.disabled || undefined}
                   data-active={active || undefined}
                   onPointerMove={() => {
-                    if (!option.disabled) setActiveIndex(index);
+                    if (!option.disabled) setActiveIdentity(option.identity);
                   }}
                   onPointerDown={(event) => event.preventDefault()}
                   onClick={() => chooseOption(option)}
@@ -377,8 +381,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
         {...nativeProps}
         ref={setNativeSelectRef}
         id={nativeId}
-        value={isControlled ? selectedValue : undefined}
-        defaultValue={isControlled ? undefined : initialValue}
+        value={selectedValue}
         disabled={disabled}
         required={required}
         tabIndex={-1}
@@ -394,7 +397,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
           }
         }}
       >
-        {children}
+        {options.map((option) => (
+          <option key={option.identity} value={option.value} disabled={option.disabled}>
+            {option.nativeLabel}
+          </option>
+        ))}
       </select>
     </div>
   );
