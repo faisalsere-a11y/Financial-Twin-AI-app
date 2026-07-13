@@ -54,27 +54,46 @@ export function CommandPalette({ onOpenChange }: { onOpenChange?: (open: boolean
   const [activeIndex, setActiveIndex] = useState(0);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const focusRestoreFrameRef = useRef<number | null>(null);
+  const paletteOpenRef = useRef(open);
+  paletteOpenRef.current = open;
   const shouldReduceMotion = useReducedMotion();
 
   const filtered = useMemo(() => filterCommands(query), [query]);
 
+  const cancelFocusRestore = useCallback(() => {
+    if (focusRestoreFrameRef.current === null) return;
+    cancelAnimationFrame(focusRestoreFrameRef.current);
+    focusRestoreFrameRef.current = null;
+  }, []);
+
   const show = useCallback(() => {
+    cancelFocusRestore();
+    paletteOpenRef.current = true;
     if (!dialogRef.current?.contains(document.activeElement)) {
       previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     }
     setOpen(true);
     onOpenChange?.(true);
-  }, [onOpenChange]);
+  }, [cancelFocusRestore, onOpenChange]);
 
   const close = useCallback(() => {
+    paletteOpenRef.current = false;
     setOpen(false);
   }, []);
 
   const completeClose = useCallback(() => {
+    const restoreTarget = previousFocusRef.current;
     onOpenChange?.(false);
     setQuery("");
-    requestAnimationFrame(() => previousFocusRef.current?.focus());
-  }, [onOpenChange]);
+    cancelFocusRestore();
+    focusRestoreFrameRef.current = requestAnimationFrame(() => {
+      focusRestoreFrameRef.current = null;
+      if (!paletteOpenRef.current) restoreTarget?.focus();
+    });
+  }, [cancelFocusRestore, onOpenChange]);
+
+  useEffect(() => cancelFocusRestore, [cancelFocusRestore]);
 
   useEffect(() => {
     const onOpenRequest = () => show();

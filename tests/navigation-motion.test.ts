@@ -30,8 +30,32 @@ describe("premium navigation shell", () => {
     expect(shell).toContain("sidebarWidth");
     expect(shell).toContain("SIDEBAR_WIDTH_EXPANDED");
     expect(shell).toContain("SIDEBAR_WIDTH_COLLAPSED");
-    expect(shell).toContain('!sidebarHydrated && "lg:invisible"');
+    expect(shell).not.toContain("lg:invisible");
+    expect(shell).toContain("useLayoutEffect");
+    expect(shell).toContain("sidebarMotionReady");
+    expect(shell).toContain(
+      "duration: !sidebarMotionReady || shouldReduceMotion ? 0 : motionTokens.standard"
+    );
+    expect(shell).toContain("motionEnabled={sidebarMotionReady}");
+    expect(shell.match(/const motionDisabled = !motionEnabled \|\| shouldReduceMotion/g)).toHaveLength(2);
+    expect(shell).toContain("<Brand compact={collapsed} motionEnabled={motionEnabled} />");
+    expect(shell).toContain("if (!motionEnabled) return <>{children}</>");
+    expect(shell.match(/<SidebarPresence motionEnabled={motionEnabled}/g)).toHaveLength(4);
+    expect(shell).toContain(
+      "transition={{ duration: motionDisabled ? 0 : motionTokens.standard, ease: motionTokens.ease }}"
+    );
+    expect(shell).toMatch(
+      /setSidebarCollapsed\(preference\.collapsed\);[\s\S]*requestAnimationFrame\(\(\) => setSidebarMotionReady\(true\)\)/
+    );
     expect(shell).toContain("sidebarPreferenceReadableRef");
+  });
+
+  it("keeps navigation reachable in a short desktop viewport", () => {
+    expect(shell).toContain(
+      '"flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain py-6"'
+    );
+    expect(shell).toContain("h-[78px] shrink-0");
+    expect(shell).toContain("flex shrink-0 items-center border-t");
   });
 
   it("provides compact labels and tooltips without removing expanded text", () => {
@@ -59,8 +83,15 @@ describe("premium navigation shell", () => {
     expect(palette).toContain("AnimatePresence");
     expect(palette).toContain("motion.div");
     expect(palette).toContain('aria-modal="true"');
-    expect(palette).toContain("previousFocusRef.current?.focus()");
+    expect(palette).not.toContain("previousFocusRef.current?.focus()");
     expect(palette).toContain("!dialogRef.current?.contains(document.activeElement)");
+    expect(palette).toContain("focusRestoreFrameRef");
+    expect(palette).toContain("paletteOpenRef");
+    expect(palette).toContain("cancelAnimationFrame");
+    expect(palette).toContain("const restoreTarget = previousFocusRef.current");
+    expect(palette).toContain("if (!paletteOpenRef.current) restoreTarget?.focus()");
+    expect(palette).toMatch(/const show = useCallback\(\(\) => \{\s*cancelFocusRestore\(\);/);
+    expect(palette).toContain("useEffect(() => cancelFocusRestore, [cancelFocusRestore])");
     expect(palette).toContain("onExitComplete");
     expect(palette).toContain("COMMAND_PALETTE_EVENT");
     expect(palette).toContain("event.shiftKey");

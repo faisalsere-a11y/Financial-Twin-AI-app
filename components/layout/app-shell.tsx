@@ -24,7 +24,7 @@ import {
   X,
   type LucideIcon
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -54,13 +54,41 @@ const navigationIcons: Record<NavigationIcon, LucideIcon> = {
 const SIDEBAR_WIDTH_EXPANDED = 280;
 const SIDEBAR_WIDTH_COLLAPSED = 88;
 // Browser/device preference: financial-twin.sidebar-collapsed.v1
+const useBrowserLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 type ShellOffsetStyle = CSSProperties & {
   "--sidebar-width": string;
 };
 
-function Brand({ href = "/dashboard", compact = false }: { href?: string; compact?: boolean }) {
+function SidebarPresence({
+  motionEnabled,
+  children,
+  mode
+}: {
+  motionEnabled: boolean;
+  children: React.ReactNode;
+  mode?: "sync" | "wait";
+}) {
+  if (!motionEnabled) return <>{children}</>;
+
+  return (
+    <AnimatePresence initial={false} mode={mode}>
+      {children}
+    </AnimatePresence>
+  );
+}
+
+function Brand({
+  href = "/dashboard",
+  compact = false,
+  motionEnabled = true
+}: {
+  href?: string;
+  compact?: boolean;
+  motionEnabled?: boolean;
+}) {
   const shouldReduceMotion = useReducedMotion();
+  const motionDisabled = !motionEnabled || shouldReduceMotion;
 
   return (
     <Link
@@ -74,20 +102,20 @@ function Brand({ href = "/dashboard", compact = false }: { href?: string; compac
     >
       <motion.span
         className="relative flex size-10 shrink-0 items-center justify-center"
-        animate={shouldReduceMotion ? { opacity: 1, scale: 1 } : { opacity: [0.92, 1, 0.92], scale: [1, 1.025, 1] }}
-        transition={shouldReduceMotion ? { duration: 0 } : { duration: 4.8, ease: "easeInOut", repeat: Infinity }}
+        animate={motionDisabled ? { opacity: 1, scale: 1 } : { opacity: [0.92, 1, 0.92], scale: [1, 1.025, 1] }}
+        transition={motionDisabled ? { duration: 0 } : { duration: 4.8, ease: "easeInOut", repeat: Infinity }}
       >
         <span aria-hidden="true" className="absolute inset-0 rounded-full bg-primary/20 blur-md" />
         <NovaOrb className="relative size-10 motion-safe:transition-transform motion-safe:duration-[var(--motion-fast)] group-hover:scale-[1.04]" />
       </motion.span>
-      <AnimatePresence initial={false}>
+      <SidebarPresence motionEnabled={motionEnabled}>
         {!compact && (
           <motion.span
             key="brand-copy"
-            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+            initial={motionDisabled ? { opacity: 1 } : { opacity: 0, x: -4 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
-            transition={{ duration: shouldReduceMotion ? 0 : motionTokens.fast, ease: motionTokens.ease }}
+            exit={motionDisabled ? { opacity: 1 } : { opacity: 0, x: -4 }}
+            transition={{ duration: motionDisabled ? 0 : motionTokens.fast, ease: motionTokens.ease }}
             className="whitespace-nowrap leading-tight"
           >
             <span className="block text-sm font-black tracking-tight">Financial Twin AI</span>
@@ -96,7 +124,7 @@ function Brand({ href = "/dashboard", compact = false }: { href?: string; compac
             </span>
           </motion.span>
         )}
-      </AnimatePresence>
+      </SidebarPresence>
     </Link>
   );
 }
@@ -106,35 +134,38 @@ function Sidebar({
   layoutScope,
   onNavigate,
   firstLinkRef,
-  onCollapseToggle
+  onCollapseToggle,
+  motionEnabled = true
 }: {
   collapsed?: boolean;
   layoutScope: "desktop" | "mobile";
   onNavigate?: () => void;
   firstLinkRef?: (element: HTMLAnchorElement | null) => void;
   onCollapseToggle?: () => void;
+  motionEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const { profile, source } = useFinancialProfile();
   const shouldReduceMotion = useReducedMotion();
+  const motionDisabled = !motionEnabled || shouldReduceMotion;
   const presenceTransition = {
-    duration: shouldReduceMotion ? 0 : motionTokens.fast,
+    duration: motionDisabled ? 0 : motionTokens.fast,
     ease: motionTokens.ease
   };
 
   return (
     <aside className="flex h-full min-w-0 flex-col overflow-hidden border-r border-border bg-card/95 backdrop-blur-2xl">
       <div className={cn("flex h-[78px] shrink-0 items-center border-b border-border", collapsed ? "justify-center px-3" : "px-6")}>
-        <Brand compact={collapsed} />
+        <Brand compact={collapsed} motionEnabled={motionEnabled} />
       </div>
       <div className={cn("shrink-0 pt-5", collapsed ? "px-3" : "px-4")}>
-        <AnimatePresence initial={false} mode="wait">
+        <SidebarPresence motionEnabled={motionEnabled} mode="wait">
           {collapsed ? (
             <motion.div
               key="compact-profile"
-              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              initial={motionDisabled ? { opacity: 1 } : { opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              exit={motionDisabled ? { opacity: 1 } : { opacity: 0 }}
               transition={presenceTransition}
               aria-label={`${profile.name}, ${profile.currency}`}
               title={`${profile.name} — ${profile.currency}`}
@@ -145,9 +176,9 @@ function Sidebar({
           ) : (
             <motion.div
               key="expanded-profile"
-              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              initial={motionDisabled ? { opacity: 1 } : { opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+              exit={motionDisabled ? { opacity: 1 } : { opacity: 0 }}
               transition={presenceTransition}
               className="rounded-2xl border border-primary/20 bg-primary/10 p-4"
             >
@@ -161,12 +192,15 @@ function Sidebar({
               </p>
             </motion.div>
           )}
-        </AnimatePresence>
+        </SidebarPresence>
       </div>
       <nav
         id={`${layoutScope}-primary-links`}
         aria-label="Primary navigation"
-        className={cn("flex flex-1 flex-col gap-1.5 py-6", collapsed ? "px-3" : "px-4")}
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain py-6",
+          collapsed ? "px-3" : "px-4"
+        )}
       >
         {navItems.map((item, index) => {
           const Icon = navigationIcons[item.icon];
@@ -192,7 +226,7 @@ function Sidebar({
                 <motion.span
                   layoutId={`primary-navigation-active-${layoutScope}`}
                   aria-hidden="true"
-                  transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+                  transition={{ duration: motionDisabled ? 0 : motionTokens.standard, ease: motionTokens.ease }}
                   className="absolute inset-0 z-0 rounded-2xl border border-primary/25 bg-primary/10 shadow-glow"
                 />
               )}
@@ -206,13 +240,13 @@ function Sidebar({
               >
                 <Icon className="size-4" aria-hidden="true" />
               </span>
-              <AnimatePresence initial={false}>
+              <SidebarPresence motionEnabled={motionEnabled}>
                 {!collapsed && (
                   <motion.span
                     key="navigation-copy"
-                    initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+                    initial={motionDisabled ? { opacity: 1 } : { opacity: 0, x: -4 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+                    exit={motionDisabled ? { opacity: 1 } : { opacity: 0, x: -4 }}
                     transition={presenceTransition}
                     className="relative z-10 min-w-0 flex-1"
                   >
@@ -220,19 +254,19 @@ function Sidebar({
                     <span className="block truncate text-[11px] text-muted-foreground">{item.hint}</span>
                   </motion.span>
                 )}
-              </AnimatePresence>
+              </SidebarPresence>
             </Link>
           );
         })}
       </nav>
       <div className={cn("flex shrink-0 items-center border-t border-border", collapsed ? "justify-center p-3" : "justify-between gap-3 p-5")}>
-        <AnimatePresence initial={false}>
+        <SidebarPresence motionEnabled={motionEnabled}>
           {!collapsed && (
             <motion.div
               key="model-status"
-              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+              initial={motionDisabled ? { opacity: 1 } : { opacity: 0, x: -4 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, x: -4 }}
+              exit={motionDisabled ? { opacity: 1 } : { opacity: 0, x: -4 }}
               transition={presenceTransition}
               className="flex min-w-0 flex-1 items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground"
             >
@@ -243,7 +277,7 @@ function Sidebar({
               <span>Browser model</span>
             </motion.div>
           )}
-        </AnimatePresence>
+        </SidebarPresence>
         {onCollapseToggle && (
           collapsed ? (
             <Button
@@ -339,7 +373,7 @@ function Topbar() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const shouldReduceMotion = useReducedMotion();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarHydrated, setSidebarHydrated] = useState(false);
+  const [sidebarMotionReady, setSidebarMotionReady] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobilePresent, setMobilePresent] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -347,7 +381,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sidebarPreferenceReadableRef = useRef(false);
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
   const shellTransition = {
-    duration: !sidebarHydrated || shouldReduceMotion ? 0 : motionTokens.standard,
+    duration: !sidebarMotionReady || shouldReduceMotion ? 0 : motionTokens.standard,
     ease: motionTokens.ease
   };
 
@@ -365,22 +399,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setMobileOpen(true);
   }, []);
 
-  useEffect(() => {
+  useBrowserLayoutEffect(() => {
     const storage = getSidebarPreferenceStorage(window);
     const preference = storage
       ? readSidebarCollapsedPreferenceResult(storage)
       : { collapsed: false, readable: false };
     sidebarPreferenceReadableRef.current = preference.readable;
     setSidebarCollapsed(preference.collapsed);
-    const hydrationFrame = requestAnimationFrame(() => setSidebarHydrated(true));
-    return () => cancelAnimationFrame(hydrationFrame);
+    const motionFrame = requestAnimationFrame(() => setSidebarMotionReady(true));
+    return () => cancelAnimationFrame(motionFrame);
   }, []);
 
   useEffect(() => {
-    if (!sidebarHydrated || !sidebarPreferenceReadableRef.current) return;
+    if (!sidebarMotionReady || !sidebarPreferenceReadableRef.current) return;
     const storage = getSidebarPreferenceStorage(window);
     if (storage) persistSidebarCollapsedPreference(storage, sidebarCollapsed);
-  }, [sidebarCollapsed, sidebarHydrated]);
+  }, [sidebarCollapsed, sidebarMotionReady]);
 
   useEffect(() => {
     if (!mobilePresent) return;
@@ -418,14 +452,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         transition={shellTransition}
         aria-hidden={mobilePresent || undefined}
         inert={mobilePresent || undefined}
-        className={cn(
-          "app-print-hide fixed inset-y-0 left-0 z-40 hidden lg:block",
-          !sidebarHydrated && "lg:invisible"
-        )}
+        className="app-print-hide fixed inset-y-0 left-0 z-40 hidden lg:block"
       >
         <Sidebar
           collapsed={sidebarCollapsed}
           layoutScope="desktop"
+          motionEnabled={sidebarMotionReady}
           onCollapseToggle={() => {
             sidebarPreferenceReadableRef.current = true;
             setSidebarCollapsed((current) => !current);
@@ -508,10 +540,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         style={{ "--sidebar-width": `${SIDEBAR_WIDTH_EXPANDED}px` } as ShellOffsetStyle}
         aria-hidden={mobilePresent || undefined}
         inert={mobilePresent || undefined}
-        className={cn(
-          "lg:pl-[var(--sidebar-width)]",
-          !sidebarHydrated && "lg:invisible"
-        )}
+        className="lg:pl-[var(--sidebar-width)]"
       >
         <div className="flex h-[78px] items-center border-b border-border bg-card/80 px-4 backdrop-blur-2xl lg:hidden">
           <Button
