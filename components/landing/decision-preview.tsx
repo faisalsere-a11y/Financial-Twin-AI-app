@@ -101,7 +101,7 @@ export function DecisionPreview() {
                 onClick={() => setSelectedId(option.id)}
                 onKeyDown={(event) => handleTabKeyDown(event, index)}
                 className={cn(
-                  "min-h-12 rounded-xl border px-3 py-2 text-left text-xs font-bold transition-[transform,background-color,border-color,color] duration-[var(--motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none",
+                  "min-h-12 rounded-xl border px-3 py-2 text-left text-xs font-bold transition-[transform,background-color,border-color,color] [transition-duration:var(--motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none",
                   selected
                     ? "border-primary/40 bg-primary/10 text-primary shadow-glow"
                     : "border-border bg-muted/40 text-muted-foreground hover:-translate-y-0.5 hover:border-primary/20 hover:bg-muted"

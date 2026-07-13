@@ -26,7 +26,7 @@ const TableBody = React.forwardRef<HTMLTableSectionElement, TableBodyProps>(
       className={cn(
         "[&_tr:last-child]:border-0",
         animated &&
-          "motion-safe:[&_tr]:animate-in motion-safe:[&_tr]:fade-in-0 motion-safe:[&_tr]:slide-in-from-bottom-1 motion-safe:[&_tr]:duration-[var(--motion-standard)] motion-safe:[&_tr:nth-child(2)]:delay-[40ms] motion-safe:[&_tr:nth-child(3)]:delay-[80ms] motion-safe:[&_tr:nth-child(4)]:delay-[120ms] motion-safe:[&_tr:nth-child(5)]:delay-[160ms] motion-safe:[&_tr:nth-child(6)]:delay-[200ms] motion-safe:[&_tr:nth-child(n+7)]:delay-[240ms]",
+          "motion-safe:[&_tr]:animate-in motion-safe:[&_tr]:fade-in-0 motion-safe:[&_tr]:slide-in-from-bottom-1 motion-safe:[&_tr]:[animation-duration:var(--motion-standard)] motion-safe:[&_tr:nth-child(2)]:[animation-delay:40ms] motion-safe:[&_tr:nth-child(3)]:[animation-delay:80ms] motion-safe:[&_tr:nth-child(4)]:[animation-delay:120ms] motion-safe:[&_tr:nth-child(5)]:[animation-delay:160ms] motion-safe:[&_tr:nth-child(6)]:[animation-delay:200ms] motion-safe:[&_tr:nth-child(n+7)]:[animation-delay:240ms]",
         className
       )}
       {...props}

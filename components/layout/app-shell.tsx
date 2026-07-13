@@ -18,6 +18,7 @@ import {
   Settings,
   Sparkles,
   Sun,
+  SunMoon,
   Target,
   UserRound,
   Wand2,
@@ -108,7 +109,7 @@ function Brand({
         transition={motionDisabled ? { duration: 0 } : { duration: 4.8, ease: "easeInOut", repeat: Infinity }}
       >
         <span aria-hidden="true" className="absolute inset-0 rounded-full bg-primary/20 blur-md" />
-        <NovaOrb className="relative size-10 motion-safe:transition-transform motion-safe:duration-[var(--motion-fast)] group-hover:scale-[1.04]" />
+        <NovaOrb className="relative size-10 motion-safe:transition-transform motion-safe:[transition-duration:var(--motion-fast)] group-hover:scale-[1.04]" />
       </motion.span>
       <SidebarPresence motionEnabled={motionEnabled}>
         {!compact && (
@@ -234,7 +235,7 @@ function Sidebar({
               )}
               <span
                 className={cn(
-                  "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-xl border motion-safe:transition-[color,transform,box-shadow] motion-safe:duration-[var(--motion-fast)] group-hover:scale-[1.04] group-hover:shadow-glow",
+                  "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-xl border motion-safe:transition-[color,transform,box-shadow] motion-safe:[transition-duration:var(--motion-fast)] group-hover:scale-[1.04] group-hover:shadow-glow",
                   active
                     ? "border-primary/25 bg-primary/10 text-primary shadow-glow"
                     : "border-border bg-muted/50 text-muted-foreground group-hover:text-primary"
@@ -314,16 +315,25 @@ function Sidebar({
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const dark = resolvedTheme === "dark";
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      aria-label={`Switch to ${dark ? "light" : "dark"} theme`}
+      aria-label={mounted ? `Switch to ${dark ? "light" : "dark"} theme` : "Change color theme"}
+      disabled={!mounted}
       onClick={() => setTheme(dark ? "light" : "dark")}
     >
-      {dark ? <Sun className="size-4" aria-hidden="true" /> : <Moon className="size-4" aria-hidden="true" />}
+      {!mounted ? (
+        <SunMoon className="size-4" aria-hidden="true" />
+      ) : dark ? (
+        <Sun className="size-4" aria-hidden="true" />
+      ) : (
+        <Moon className="size-4" aria-hidden="true" />
+      )}
     </Button>
   );
 }

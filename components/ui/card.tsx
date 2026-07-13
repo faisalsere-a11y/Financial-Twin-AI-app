@@ -12,7 +12,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       className={cn(
         "relative overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-glass",
         interactive &&
-          "motion-safe:transition-transform motion-safe:duration-[var(--motion-fast)] motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:hover:scale-[1.01]",
+          "motion-safe:transition-transform motion-safe:[transition-duration:var(--motion-fast)] motion-safe:ease-out motion-safe:hover:-translate-y-0.5 motion-safe:hover:scale-[1.01]",
         className
       )}
       {...props}

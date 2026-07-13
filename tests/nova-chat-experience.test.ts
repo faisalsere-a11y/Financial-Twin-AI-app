@@ -111,6 +111,34 @@ describe("Nova chat experience", () => {
     expect(chat).toContain('aria-label="Close Nova chat"');
   });
 
+  it("preserves one-shot initial focus through profile initialization without stealing later focus", () => {
+    const chat = source("components/nova/nova-chat.tsx");
+    const cancelPendingStart = chat.indexOf("const cancelPendingWork");
+    const cancelInitialFocusStart = chat.indexOf("const cancelInitialFocus", cancelPendingStart);
+    const cancelPendingSource = chat.slice(cancelPendingStart, cancelInitialFocusStart);
+    const closeStart = chat.indexOf("const handleClose");
+    const closeEnd = chat.indexOf("useLayoutEffect", closeStart);
+    const closeSource = chat.slice(closeStart, closeEnd);
+    const initialFocusEffectStart = chat.indexOf("if (!isLoaded || !initialFocusPendingRef.current) return;");
+    const initialFocusEffectEnd = chat.indexOf("useEffect(() =>", initialFocusEffectStart);
+    const initialFocusEffectSource = chat.slice(initialFocusEffectStart, initialFocusEffectEnd);
+
+    expect(chat).toContain("initialFocusPendingRef");
+    expect(chat).toContain("initialFocusFrameRef");
+    expect(cancelPendingSource).not.toContain("initialFocusFrameRef");
+    expect(closeSource).toContain("cancelInitialFocus();");
+    expect(closeSource.indexOf("cancelInitialFocus();")).toBeLessThan(closeSource.indexOf("onClose("));
+    expect(chat).toContain("dialogRef.current?.focus({ preventScroll: true });");
+    expect(initialFocusEffectSource).toContain("dialog.contains(document.activeElement)");
+    expect(initialFocusEffectSource).toContain("document.activeElement !== dialog");
+    expect(initialFocusEffectSource).toContain("if (!initialFocusPendingRef.current || closingRef.current) return;");
+    expect(initialFocusEffectSource).toContain("activeDialog.contains(document.activeElement)");
+    expect(initialFocusEffectSource).toContain("document.activeElement !== activeDialog");
+    expect(initialFocusEffectSource).toContain("composer.focus({ preventScroll: true });");
+    expect(initialFocusEffectSource).toContain("initialFocusPendingRef.current = false;");
+    expect(initialFocusEffectSource).toContain("return cancelInitialFocus;");
+  });
+
   it("preserves modal isolation and scroll-lock values without layout shift", () => {
     const chat = source("components/nova/nova-chat.tsx");
     const providers = source("app/providers.tsx");

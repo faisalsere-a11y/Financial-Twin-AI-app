@@ -69,6 +69,15 @@ describe("premium navigation shell", () => {
     expect(shell).toContain("AnimatePresence");
   });
 
+  it("keeps the product theme toggle stable through hydration", () => {
+    expect(shell).toContain("const [mounted, setMounted] = useState(false);");
+    expect(shell).toContain("useEffect(() => setMounted(true), []);");
+    expect(shell).toContain('aria-label={mounted ? `Switch to ${dark ? "light" : "dark"} theme` : "Change color theme"}');
+    expect(shell).toContain("disabled={!mounted}");
+    expect(shell).toContain("SunMoon");
+    expect(shell).not.toContain("suppressHydrationWarning");
+  });
+
   it("animates mobile navigation without weakening modal behavior", () => {
     expect(shell).toContain("AnimatePresence");
     expect(shell).toContain('aria-modal="true"');

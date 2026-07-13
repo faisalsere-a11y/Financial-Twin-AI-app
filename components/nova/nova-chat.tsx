@@ -116,6 +116,8 @@ export function NovaChat({ onClose, returnFocusRef }: NovaChatProps) {
   const pendingRef = useRef(false);
   const responseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const focusFrameRef = useRef<number | null>(null);
+  const initialFocusFrameRef = useRef<number | null>(null);
+  const initialFocusPendingRef = useRef(true);
   const scrollFrameRef = useRef<number | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -152,6 +154,12 @@ export function NovaChat({ onClose, returnFocusRef }: NovaChatProps) {
     if (updateState) setPending(false);
   }, []);
 
+  const cancelInitialFocus = useCallback(() => {
+    if (initialFocusFrameRef.current === null) return;
+    cancelAnimationFrame(initialFocusFrameRef.current);
+    initialFocusFrameRef.current = null;
+  }, []);
+
   const focusComposer = useCallback(() => {
     if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
     focusFrameRef.current = requestAnimationFrame(() => {
@@ -164,8 +172,9 @@ export function NovaChat({ onClose, returnFocusRef }: NovaChatProps) {
     if (closingRef.current) return;
     closingRef.current = true;
     cancelPendingWork();
+    cancelInitialFocus();
     onClose(returnFocusRef.current ?? previousFocusRef.current);
-  }, [cancelPendingWork, onClose, returnFocusRef]);
+  }, [cancelInitialFocus, cancelPendingWork, onClose, returnFocusRef]);
 
   useLayoutEffect(() => {
     cancelPendingWork();
@@ -178,6 +187,7 @@ export function NovaChat({ onClose, returnFocusRef }: NovaChatProps) {
 
   useLayoutEffect(() => {
     closingRef.current = false;
+    initialFocusPendingRef.current = true;
     const previousFocus = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
@@ -191,19 +201,42 @@ export function NovaChat({ onClose, returnFocusRef }: NovaChatProps) {
 
     body.style.overflow = "hidden";
     if (scrollbarWidth > 0) body.style.paddingRight = `${bodyPaddingRight + scrollbarWidth}px`;
-
-    focusFrameRef.current = requestAnimationFrame(() => {
-      focusFrameRef.current = null;
-      dialogRef.current?.focus();
-      composerRef.current?.focus({ preventScroll: true });
-    });
+    dialogRef.current?.focus({ preventScroll: true });
 
     return () => {
       cancelPendingWork(false);
+      cancelInitialFocus();
       body.style.overflow = previousOverflow;
       body.style.paddingRight = previousPaddingRight;
     };
-  }, [cancelPendingWork]);
+  }, [cancelInitialFocus, cancelPendingWork]);
+
+  useLayoutEffect(() => {
+    if (!isLoaded || !initialFocusPendingRef.current) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (dialog.contains(document.activeElement) && document.activeElement !== dialog) {
+      initialFocusPendingRef.current = false;
+      return;
+    }
+
+    cancelInitialFocus();
+    initialFocusFrameRef.current = requestAnimationFrame(() => {
+      initialFocusFrameRef.current = null;
+      if (!initialFocusPendingRef.current || closingRef.current) return;
+      const activeDialog = dialogRef.current;
+      const composer = composerRef.current;
+      if (!activeDialog || !composer || composer.disabled) return;
+      if (activeDialog.contains(document.activeElement) && document.activeElement !== activeDialog) {
+        initialFocusPendingRef.current = false;
+        return;
+      }
+      composer.focus({ preventScroll: true });
+      initialFocusPendingRef.current = false;
+    });
+
+    return cancelInitialFocus;
+  }, [cancelInitialFocus, isLoaded]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useForm, type FieldPath } from "react-hook-form";
@@ -63,6 +63,8 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
   const shouldReduceMotion = useReducedMotion() === true;
   const { profile, source, subject, savedAt, isLoaded, save } = activeProfile;
   const hydratedSubject = useRef<string | null>(null);
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const focusStepHeadingRef = useRef(false);
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const form = useForm<OnboardingValues>({
@@ -81,6 +83,12 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
     hydratedSubject.current = subject;
   }, [form, isLoaded, profile, subject]);
 
+  useLayoutEffect(() => {
+    if (!focusStepHeadingRef.current) return;
+    focusStepHeadingRef.current = false;
+    stepHeadingRef.current?.focus();
+  }, [step]);
+
   const previewProfile = useMemo(() => {
     const parsed = onboardingSchema.safeParse(values);
     return parsed.success ? onboardingToFinancialProfile(parsed.data, profile) : profile;
@@ -94,6 +102,13 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
   };
   const numberRegistration = (name: FieldPath<OnboardingValues>) => form.register(name, { valueAsNumber: true });
 
+  const moveToStep = (nextStep: number) => {
+    const boundedStep = Math.max(0, Math.min(onboardingSteps.length - 1, nextStep));
+    if (boundedStep === step) return;
+    focusStepHeadingRef.current = true;
+    setStep(boundedStep);
+  };
+
   const next = async () => {
     setStatus(null);
     const current = onboardingSteps[step];
@@ -104,7 +119,7 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
       if (firstInvalid) form.setFocus(firstInvalid);
       return;
     }
-    setStep((currentStep) => Math.min(onboardingSteps.length - 1, currentStep + 1));
+    moveToStep(step + 1);
   };
 
   const submit = form.handleSubmit((submittedValues) => {
@@ -146,7 +161,7 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">Step {step + 1} of {onboardingSteps.length}</p>
-                <CardTitle className="mt-2 text-2xl normal-case tracking-tight">{onboardingSteps[step]?.title}</CardTitle>
+                <CardTitle ref={stepHeadingRef} tabIndex={-1} className="mt-2 text-2xl normal-case tracking-tight">{onboardingSteps[step]?.title}</CardTitle>
                 <p className="mt-1 text-sm text-muted-foreground">{onboardingSteps[step]?.summary}</p>
               </div>
               <div className="w-full sm:w-52">
@@ -161,7 +176,7 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
                     type="button"
                     aria-current={index === step ? "step" : undefined}
                     disabled={index > step}
-                    onClick={() => setStep(index)}
+                    onClick={() => moveToStep(index)}
                     className={cn(
                       "flex min-h-11 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45",
                       index === step ? "border-primary/30 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground"
@@ -269,7 +284,7 @@ function SubjectOnboardingWizard({ activeProfile }: { activeProfile: ReturnType<
               )}
 
               <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <Button type="button" variant="outline" disabled={step === 0} onClick={() => { setStatus(null); setStep((current) => Math.max(0, current - 1)); }}>
+                <Button type="button" variant="outline" disabled={step === 0} onClick={() => { setStatus(null); moveToStep(step - 1); }}>
                   <ArrowLeft data-icon="inline-start" aria-hidden="true" />Back
                 </Button>
                 {step < onboardingSteps.length - 1 ? (

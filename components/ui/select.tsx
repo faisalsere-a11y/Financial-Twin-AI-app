@@ -327,7 +327,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
         onKeyDown={handleTriggerKeyDown}
         onBlur={handleTriggerBlur}
         className={cn(
-          "flex h-11 w-full items-center justify-between gap-3 rounded-xl border border-input bg-card/80 px-3 py-2 text-left text-sm text-foreground shadow-sm backdrop-blur-sm motion-safe:transition-[border-color,box-shadow,transform] motion-safe:duration-[var(--motion-fast)] focus-visible:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-11 w-full items-center justify-between gap-3 rounded-xl border border-input bg-card/80 px-3 py-2 text-left text-sm text-foreground shadow-sm backdrop-blur-sm motion-safe:transition-[border-color,box-shadow,transform] motion-safe:[transition-duration:var(--motion-fast)] focus-visible:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
           open && "border-primary/40 ring-2 ring-ring",
           className
         )}
@@ -337,7 +337,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
         </span>
         <ChevronDown
           aria-hidden="true"
-          className={cn("size-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-[var(--motion-fast)]", open && "rotate-180")}
+          className={cn("size-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:[transition-duration:var(--motion-fast)]", open && "rotate-180")}
         />
       </button>
 

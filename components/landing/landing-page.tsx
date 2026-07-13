@@ -145,7 +145,7 @@ export function LandingPage() {
     <main className="gradient-mesh relative min-h-screen overflow-x-clip">
       <a
         href="#landing-content"
-        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-glow transition-transform duration-[var(--motion-fast)] focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring"
+        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-glow transition-transform [transition-duration:var(--motion-fast)] focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-ring"
       >
         Skip to main content
       </a>
@@ -356,10 +356,10 @@ export function LandingPage() {
                     <li key={item.label}>
                       <Link
                         href={item.href}
-                        className="group/link flex min-h-11 items-center justify-between rounded-xl border border-border bg-muted/35 px-4 text-sm font-bold transition-[transform,background-color,border-color] duration-[var(--motion-fast)] hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none"
+                        className="group/link flex min-h-11 items-center justify-between rounded-xl border border-border bg-muted/35 px-4 text-sm font-bold transition-[transform,background-color,border-color] [transition-duration:var(--motion-fast)] hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none"
                       >
                         {item.label}
-                        <ArrowRight className="size-4 text-muted-foreground transition-transform duration-[var(--motion-fast)] group-hover/link:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />
+                        <ArrowRight className="size-4 text-muted-foreground transition-transform [transition-duration:var(--motion-fast)] group-hover/link:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />
                       </Link>
                     </li>
                   ))}

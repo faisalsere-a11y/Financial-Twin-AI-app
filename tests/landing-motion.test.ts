@@ -124,9 +124,9 @@ describe("landing motion contracts", () => {
 
   it("uses the shared fast control timing for landing navigation and preview tabs", () => {
     expect(navigation).toContain('aria-label="Landing page"');
-    expect(navigation).toContain("duration-[var(--motion-fast)]");
+    expect(navigation).toContain("[transition-duration:var(--motion-fast)]");
     expect(navigation).toContain("focus-visible:ring-2");
-    expect(preview).toContain("duration-[var(--motion-fast)]");
+    expect(preview).toContain("[transition-duration:var(--motion-fast)]");
     expect(preview).toContain("focus-visible:ring-2");
   });
 

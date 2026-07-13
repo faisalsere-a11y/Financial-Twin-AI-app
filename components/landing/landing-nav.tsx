@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { NovaOrb } from "@/components/brand/nova-orb";
 import { Button } from "@/components/ui/button";
 
-const navigationLinkClass = "rounded-lg px-1 py-2 transition-colors duration-[var(--motion-fast)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const navigationLinkClass = "rounded-lg px-1 py-2 transition-colors [transition-duration:var(--motion-fast)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 function LandingThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -44,7 +44,7 @@ export function LandingNav() {
           aria-label="Financial Twin AI home"
           className="group flex min-w-0 shrink-0 items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <NovaOrb className="size-9 shrink-0 transition-transform duration-[var(--motion-fast)] group-hover:scale-105 motion-reduce:transform-none sm:size-10" />
+          <NovaOrb className="size-9 shrink-0 transition-transform [transition-duration:var(--motion-fast)] group-hover:scale-105 motion-reduce:transform-none sm:size-10" />
           <span className="hidden min-w-0 leading-tight sm:block">
             <span className="block truncate text-sm font-black tracking-tight">Financial Twin AI</span>
             <span className="block truncate text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">NOVA intelligence</span>

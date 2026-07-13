@@ -821,7 +821,7 @@ git commit -m "feat: apply cohesive motion across product routes"
 **Interfaces:**
 - Verifies all earlier task outputs together.
 
-- [ ] **Step 1: Run complete automated gates**
+- [x] **Step 1: Run complete automated gates**
 
 ```powershell
 .\node_modules\.bin\vitest.cmd run
@@ -832,7 +832,7 @@ git diff --check
 
 Expected: all tests pass, TypeScript and ESLint emit no errors, and diff check is clean.
 
-- [ ] **Step 2: Verify protected engines remain unchanged**
+- [x] **Step 2: Verify protected engines remain unchanged**
 
 ```powershell
 git diff 560fc46 -- lib/financial/engine.ts lib/financial/investments.ts lib/reports/export.ts
@@ -840,7 +840,7 @@ git diff 560fc46 -- lib/financial/engine.ts lib/financial/investments.ts lib/rep
 
 Expected: no diff unless a separately documented, test-proven fix was explicitly approved.
 
-- [ ] **Step 3: Build authenticated server mode**
+- [x] **Step 3: Build authenticated server mode**
 
 ```powershell
 $env:DATABASE_URL='file:./dev.db'
@@ -854,7 +854,7 @@ node scripts/clean-next.mjs
 
 Expected: successful build with authenticated product routes dynamic and API routes present.
 
-- [ ] **Step 4: Run browser regression in authenticated mode**
+- [x] **Step 4: Run browser regression in authenticated mode**
 
 Exercise `/`, all auth routes, onboarding, dashboard, simulations, investments, goals, reports, and settings at approximately 1440×900, 900×1100, and 390×844. Verify:
 
@@ -867,19 +867,57 @@ Exercise `/`, all auth routes, onboarding, dashboard, simulations, investments, 
 - Landing pointer motion on desktop, static touch behavior on mobile, and server-rendered content.
 - Empty/loading/error/success states, console errors/warnings, one `h1`, one main landmark, and named controls.
 
-- [ ] **Step 5: Build static sample and verify preservation**
+- [x] **Step 5: Build static sample and verify preservation**
 
 Run: `node scripts/build-github-pages.mjs`
 
 Expected: 14 static pages, `app/api` restored, `docs/superpowers` preserved, no backup paths, Nova deterministic chat functional, and no `/api/auth/session` request because static SessionProvider receives `null`.
 
-- [ ] **Step 6: Record evidence and commit generated output**
+- [x] **Step 6: Record evidence and commit generated output**
 
 Update this plan with exact test counts, build route counts, browser widths, verified interactions, limitations, and any consciously deferred recommendation. Then run:
 
 ```powershell
-git add --all
+# Stage only the Task 12 source fixes, regression tests, plan, and regenerated docs.
 git commit -m "chore: verify motion and Nova experience"
 ```
 
 Expected: clean worktree and all plan checkboxes complete.
+
+#### Task 12 verification record — 2026-07-14
+
+**Automated and protected-code gates**
+
+- Final uncontended Vitest run: 36/36 files and 311/311 tests passed in 16.69s. A prior run launched concurrently with TypeScript and ESLint hit two existing 5s test timeouts; the isolated rerun passed without a code change and is the gating result.
+- `tsc --noEmit`: exit 0 in 14.6s with no output. Full `eslint .`: exit 0 in 25.0s with no output. `git diff --check`: exit 0.
+- `git diff 560fc46 -- lib/financial/engine.ts lib/financial/investments.ts lib/reports/export.ts`: empty. No protected engine change was made.
+- The user-owned `docs/superpowers/plans/2026-07-12-dashboard-final-verification.md` was content-equivalent before index refresh and remained byte-for-byte equivalent afterward: working-tree and `HEAD` blob ID `19373d6384ce9155ff77efb2451743adcb3d7806`.
+
+**Authenticated build**
+
+- Required auth environment build completed in 139.3s; Next.js 15.5.20 compiled in 51s and generated 18/18 build units.
+- Route table contained 17 rows: five dynamic API routes, seven dynamic product routes, and five static routes (`/`, `/_not-found`, and the three auth routes). The final build emitted no Tailwind ambiguity warning.
+- The only remaining build warning is Next.js workspace-root inference from the parent and worktree lockfiles. Their SHA-256 hashes are identical (`56A21393F5B525DFE1EA108D3FDAB970064D703D61FD64904A98C89E812E5CE7`), so dependency/config churn was consciously deferred.
+
+**Authenticated browser regression**
+
+- In-app Browser viewports were 1440x900 (1425px content width with scrollbar), 900x1100 (885px), and 390x844 (375px content width; full-width modal surfaces used 390px). Directly inspected named routes were `/`, `/login`, `/signup`, `/forgot-password`, `/dashboard`, `/onboarding`, `/simulations`, `/investments`, `/goals`, `/reports`, and `/settings`; each had exactly one `main` and one `h1`. The generated 404 was not included in that claim.
+- Verified no document overflow at the three widths; unclipped dashboard obligations and portfolio metrics; 88px persisted sidebar collapse and active `aria-current`; mobile drawer isolation, focus trap, Escape, scroll restoration, and focus return; custom-select mouse/keyboard selection, Escape, active descendant, and focus restoration; light/dark themes; command-palette shortcut, isolation, Escape, and focus return.
+- Landing desktop pointer variables changed under a fine pointer; capability separator widths were `0,1,1,1px` wide and all zero on mobile. Decision-preview roving focus/selection passed ArrowLeft, ArrowRight, Home, and End; ArrowUp/ArrowDown remained unhandled.
+- Goal reorder and focus restoration, invalid target focus, save, 100% celebration, and mobile editor containment were exercised. Simulation success, quarterly report switching, settings save, auth forms/login, and representative status/error states were exercised.
+- Nova was exercised on desktop/mobile for lazy-open focus, modal isolation/trap, deterministic suggestions and a custom unsupported-history question, grounded evidence, follow-ups, ISO timestamps, auto-scroll, composer focus retention, Escape, and launcher focus return.
+- Defects found and fixed during verification: ambiguous Tailwind duration/delay utilities that emitted no CSS; Nova initial focus canceled by profile initialization; onboarding step changes that retained focus on Continue; onboarding heading focus that could remain off-screen; and product-shell theme markup that differed between server render and a dark client theme. Each received a regression contract, and the Tailwind test compiles the exact candidates and asserts emitted motion-safe declarations.
+- A clean authenticated rebuild/recheck had zero console warnings/errors on landing and dashboard; Nova focused its composer on desktop/mobile; onboarding focused and revealed the `Income` heading; mobile dashboard width was 375/375; and a representative control computed `transition-duration: 0.16s`.
+
+**Static export and browser/network proof**
+
+- Final `node scripts/build-github-pages.mjs`: exit 0 in 180.5s; compiled in 70s; generated 14/14 static build units and exported 2/2. The route table had 12 rows (11 named routes plus `/_not-found`), while the artifact contained 13 HTML files because it writes both `404.html` and `404/index.html` in addition to the 11 named route documents.
+- `app/api` and `docs/superpowers` were restored; `.nojekyll` exists; both temporary backup paths are absent; the July 12 plan hash is unchanged.
+- Static landing and final dark-theme dashboard full loads had one `main`, one `h1`, 1425/1425 width, and zero new console warnings/errors. Static Nova focused the composer and returned the deterministic 82/100 health response with SAR 320,450 net worth and SAR 5,700 surplus, evidence, follow-ups, and focus retention.
+- The final static server request log contained 87 lines, zero `/api/auth/session` requests, and zero requests to any `/api/` path, confirming the null static session path.
+
+**Precisely bounded limitations**
+
+- The in-app Browser exposed viewport overrides but no coarse-pointer/touch or reduced-motion emulation. Live fine-pointer behavior was verified; touch-static and reduced-motion claims rely on source/automated contracts rather than direct emulation.
+- Account-subject switching and Nova profile-context reset were not directly exercised because the local flow exposed one authenticated account/session. Exhaustive empty/loading/error coverage on every route was also not claimed; only the directly listed states were exercised.
+- Representative screenshots and detailed Browser observations are kept in the ignored local `.superpowers/sdd/` evidence directory; they are not part of the deployment artifact.
