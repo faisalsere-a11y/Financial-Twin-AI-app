@@ -26,6 +26,19 @@ describe("interaction primitives", () => {
     expect(button).not.toMatch(/destructive:\s*"[^"]*glow-sweep/);
   });
 
+  it("uses the fast token for enabled button sweeps without changing decorative timing", () => {
+    const button = readFileSync("components/ui/button.tsx", "utf8");
+    const globals = readFileSync("app/globals.css", "utf8");
+
+    expect(button).toContain("button-glow-sweep");
+    expect(globals).toMatch(
+      /\.button-glow-sweep:not\(:disabled\):hover::after\s*{[^}]*animation: motion-glow-sweep var\(--motion-fast\)/
+    );
+    expect(globals).toMatch(
+      /\.glow-sweep:hover::after\s*{[^}]*animation: motion-glow-sweep var\(--motion-deliberate\)/
+    );
+  });
+
   it("gives toast entry, success, and error their own motion-safe feedback", () => {
     const toaster = readFileSync("components/ui/themed-toaster.tsx", "utf8");
 

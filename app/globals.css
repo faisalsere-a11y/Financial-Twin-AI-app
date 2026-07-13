@@ -211,13 +211,15 @@
     transform: translate3d(-100%, 0, 0);
   }
 
-  .glow-sweep {
+  .glow-sweep,
+  .button-glow-sweep {
     isolation: isolate;
     overflow: hidden;
     position: relative;
   }
 
-  .glow-sweep::after {
+  .glow-sweep::after,
+  .button-glow-sweep::after {
     background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.34), transparent);
     content: "";
     inset: 0;
@@ -248,6 +250,10 @@
 
   .glow-sweep:hover::after {
     animation: motion-glow-sweep var(--motion-deliberate) cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .button-glow-sweep:not(:disabled):hover::after {
+    animation: motion-glow-sweep var(--motion-fast) cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
