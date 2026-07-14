@@ -58,6 +58,10 @@ npm run build
 
 The test suite covers the financial twin engine, scenario comparison, investment projection, and deterministic Monte Carlo simulation.
 
+## License
+
+Financial Twin AI is open-source software licensed under the [MIT License](LICENSE). You may use, copy, modify, distribute, and commercially reuse the project subject to the license terms.
+
 ## Notes
 
 - Demo data is Saudi-focused and uses SAR.
