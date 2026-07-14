@@ -118,6 +118,7 @@ export function NovaChat({ onClose, returnFocusRef }: NovaChatProps) {
   const focusFrameRef = useRef<number | null>(null);
   const initialFocusFrameRef = useRef<number | null>(null);
   const initialFocusPendingRef = useRef(true);
+  const contextFocusPendingRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -178,12 +179,45 @@ export function NovaChat({ onClose, returnFocusRef }: NovaChatProps) {
 
   useLayoutEffect(() => {
     cancelPendingWork();
+    const didChangeContext = contextKeyRef.current !== contextKey;
+    const activeDialog = dialogRef.current;
+    const dialogLostFocus = didChangeContext
+      && activeDialog !== null
+      && !activeDialog.contains(document.activeElement);
+    contextFocusPendingRef.current = dialogLostFocus;
     contextKeyRef.current = contextKey;
     sequenceRef.current = 0;
     setMessages([]);
     setDraft("");
     setPending(false);
   }, [cancelPendingWork, contextKey]);
+
+  useLayoutEffect(() => {
+    if (!isLoaded || !contextFocusPendingRef.current) return;
+    const activeDialog = dialogRef.current;
+    const composer = composerRef.current;
+    if (!activeDialog || !composer || composer.disabled) return;
+
+    if (activeDialog.contains(document.activeElement) && document.activeElement !== activeDialog) {
+      contextFocusPendingRef.current = false;
+      return;
+    }
+
+    if (focusFrameRef.current !== null) cancelAnimationFrame(focusFrameRef.current);
+    focusFrameRef.current = requestAnimationFrame(() => {
+      focusFrameRef.current = null;
+      if (!contextFocusPendingRef.current || closingRef.current) return;
+      const currentDialog = dialogRef.current;
+      const composer = composerRef.current;
+      if (!currentDialog || !composer || composer.disabled) return;
+      if (currentDialog.contains(document.activeElement) && document.activeElement !== currentDialog) {
+        contextFocusPendingRef.current = false;
+        return;
+      }
+      composer.focus({ preventScroll: true });
+      contextFocusPendingRef.current = false;
+    });
+  }, [contextKey, isLoaded]);
 
   useLayoutEffect(() => {
     closingRef.current = false;

@@ -27,6 +27,7 @@ describe("premium select", () => {
     expect(source).toContain('role="option"');
     expect(source).toContain("aria-expanded");
     expect(source).toContain('key === "Escape"');
+    expect(source).toMatch(/key === "Escape"[\s\S]*event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*closeAndFocus\(\)/);
   });
 
   it("preserves native form and label semantics without duplicate controls", () => {
@@ -53,6 +54,21 @@ describe("premium select", () => {
     expect(source).toContain('document.addEventListener("pointerdown"');
     expect(source).toContain("AnimatePresence");
     expect(source).toContain("useReducedMotion");
+  });
+
+  it("portals a fixed listbox and keeps its viewport placement current", () => {
+    const source = readFileSync("components/ui/select.tsx", "utf8");
+
+    expect(source).toContain('import { createPortal } from "react-dom"');
+    expect(source).toContain("placeSelectPopup");
+    expect(source).toContain("listboxRef");
+    expect(source).toContain('className="fixed');
+    expect(source).toContain('window.addEventListener("resize"');
+    expect(source).toContain('window.addEventListener("scroll"');
+    expect(source).toContain("listboxRef.current?.contains(event.target as Node)");
+    expect(source).toContain("portalReady");
+    expect(source).toContain("setPortalReady(true)");
+    expect(source).toContain("createPortal(");
   });
 
   it("wires exactly one selected custom option and preserves native hidden options", () => {

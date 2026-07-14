@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { AnimatedNumber } from "../components/motion/animated-number";
+import { PageTransition } from "../components/motion/page-transition";
 import { Reveal, Stagger, StaggerItem } from "../components/motion/reveal";
 import * as numberMotion from "../lib/motion/number";
 
@@ -69,7 +70,12 @@ describe("motion foundation", () => {
       numberEffect.indexOf("animatedValue.set(from)")
     );
     expect(animatedNumber).toContain("if (!hasAnimatedRef.current)");
-    expect(pageTransition).toContain('initial={shouldReduceMotion ? false : "hidden"}');
+    expect(pageTransition).toContain("initial={false}");
+    expect(pageTransition).toContain('useState<PagePhase>("visible")');
+    expect(pageTransition).toContain("useBrowserLayoutEffect");
+    expect(pageTransition).toContain('window.matchMedia("(prefers-reduced-motion: reduce)").matches');
+    expect(pageTransition).toContain('setPhase("hidden")');
+    expect(pageTransition).toContain('setPhase("visible")');
     expect(pageTransition).toContain("duration: shouldReduceMotion ? 0 : motionTokens.standard");
     expect(reveal).not.toContain('initial={shouldReduceMotion ? false : "hidden"}');
     expect(reveal.match(/initial=\{false\}/g)).toHaveLength(2);
@@ -109,6 +115,22 @@ describe("motion foundation", () => {
       expect(staggerMarkup).not.toContain("<div");
       expect(markup).not.toMatch(/opacity:\s*0/);
       expect(markup).not.toMatch(/translateY\(18px\)/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("server-renders route content visibly before JavaScript or motion preferences resolve", () => {
+    vi.stubGlobal("React", React);
+    try {
+      const markup = renderToStaticMarkup(
+        createElement(PageTransition, null, "Visible route content")
+      );
+
+      expect(markup).toContain("Visible route content");
+      expect(markup).not.toMatch(/opacity:\s*0/);
+      expect(markup).not.toMatch(/translateY\(10px\)/);
+      expect(markup).not.toMatch(/transform:\s*translateY/);
     } finally {
       vi.unstubAllGlobals();
     }

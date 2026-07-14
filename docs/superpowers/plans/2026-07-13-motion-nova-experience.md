@@ -921,3 +921,48 @@ Expected: clean worktree and all plan checkboxes complete.
 - The in-app Browser exposed viewport overrides but no coarse-pointer/touch or reduced-motion emulation. Live fine-pointer behavior was verified; touch-static and reduced-motion claims rely on source/automated contracts rather than direct emulation.
 - Account-subject switching and Nova profile-context reset were not directly exercised because the local flow exposed one authenticated account/session. Exhaustive empty/loading/error coverage on every route was also not claimed; only the directly listed states were exercised.
 - Representative screenshots and detailed Browser observations are kept in the ignored local `.superpowers/sdd/` evidence directory; they are not part of the deployment artifact.
+
+#### Post-review hardening record — 2026-07-14
+
+**Independent-review fixes**
+
+- Page transitions now keep server-rendered and no-JavaScript content visible, then opt into entrance motion only after hydration and only when reduced motion is not requested.
+- The shared Select listbox now renders through a fixed `document.body` portal with viewport-aware above/below placement, clamped width, resize/scroll tracking, preserved native form semantics, and a defensive height cap. Nested Escape handling stops at the open listbox so a parent dialog remains open until a second Escape.
+- The mobile drawer now dismisses across the desktop breakpoint through both `matchMedia` and window-resize signals, releases scroll/inert ownership, fully unmounts, and does not restore focus to its hidden mobile trigger.
+- Goals now include animated semantic summary values, accessible per-goal forecast disclosures, and deterministic Nova goal signals grounded only in goal/forecast evidence. Goal-editor selects use the shared control and its scroll lock compensates for scrollbar removal.
+- Nova preserves composer focus across genuine profile-context resets when the focused follow-up is removed. Sidebar hover transforms and glow are gated by reduced-motion-safe variants.
+
+**Fresh automated and build gates**
+
+- Final uncontended Vitest run: 39/39 files and 330/330 tests passed in 11.12s.
+- `tsc --noEmit`: exit 0 in 9.6s. Full `eslint .`: exit 0 in 13.5s. `git diff --check`: exit 0.
+- The protected-engine diff remained empty, and the July 12 plan hash remained `19373d6384ce9155ff77efb2451743adcb3d7806`.
+- Final authenticated build: exit 0 in 110.7s, Prisma generated, Next.js compiled in 39.0s, and 18/18 build units completed.
+
+**Fresh authenticated Browser evidence**
+
+- Live widths were 1440×900, 900×1100, and 375×812. Landing, dashboard, Goals, Settings, and Portfolio checks had no document overflow or console warnings/errors; the Obligations card and all four Portfolio summary cards had equal client/scroll dimensions without clipping.
+- Opening the mobile drawer at 900px and resizing to 1440px restored body scrolling, removed all inert ownership, avoided hidden-trigger focus, and unmounted the dialog after its exit animation.
+- The Goals page exposed one `h1`, grounded Nova evidence, animated semantic summary output, collapsed disclosures by default, an `aria-expanded` toggle, and a named details region. The expanded layout remained contained at 375px.
+- Settings and goal-editor listboxes were fixed body portals inside the viewport at 375px with z-index 70 above the goal dialog at z-index 60. Keyboard selection updated the hidden native value. In the goal editor, the first Escape closed only the listbox; the second closed the dialog and restored scrolling/focus.
+- Nova focused its composer and answered “How much did I spend this month?” with a natural deterministic response using modeled SAR 12,800 expenses, Housing at SAR 4,200, and SAR 5,700 surplus, while clearly stating that no transaction feed was connected.
+
+**Fresh static export and network proof**
+
+- `node scripts/build-github-pages.mjs`: exit 0 in 105.4s; compiled in 35.8s; generated 14/14 build units and exported 2/2. The artifact contains 13 HTML files, `.nojekyll`, restored `app/api` and `docs/superpowers`, and no backup paths.
+- The artifact was served at its real `/Financial-Twin-AI-app/` base path. Landing/dashboard had one `main`, one `h1`, no overflow, and zero console warnings/errors. Static Nova returned the deterministic 82/100 health response with Excellent band, Medium risk, SAR 320,450 net worth, SAR 5,700 surplus, evidence, and follow-ups.
+- The static server recorded 43 requests, zero 404 responses, zero `/api/auth/session` requests, and zero requests to any `/api/` path.
+
+**Remaining bounded limitations**
+
+- The in-app Browser still exposes no reduced-motion or coarse-pointer emulation, so those behaviors remain covered by automated/source contracts rather than live emulation.
+- A real account-subject switch remains unavailable in the one-account local flow; the Nova context-reset behavior is covered by focused regression tests.
+
+**Independent re-review follow-up**
+
+- The blocker review found one remaining grounding edge case: a valid zero-target goal could be described as on track. `createGoalPortfolioInsight` now returns a deterministic `needs-target` result with no invented percentage or completion claim, and an exact zero-target regression test covers the evidence/message contract.
+- The reviewer also noted a narrow drawer focus race. The delayed focus-return callback now rechecks the desktop media query before focusing the mobile trigger.
+- Final post-review gates: 39/39 Vitest files and 331/331 tests passed in 11.14s; TypeScript passed in 19.2s; full ESLint passed in 12.9s; whitespace and protected-engine checks passed.
+- Final authenticated rebuild: exit 0 in 101.5s, compile 37.4s, 18/18 build units. Final static regeneration: exit 0 in 91.6s, compile 30.2s, 14/14 build units and 2/2 export units.
+- A second reviewer found that filtering funded goals before choosing the next unfinished goal made the headline “first in your funding order” inaccurate. On-track insight titles now state only that the selected goal has an on-track forecast; a funded-first/unfinished-second regression test prevents the ordering claim from returning.
+- Absolute final gates: 39/39 Vitest files and 332/332 tests passed in 10.83s; TypeScript passed in 5.8s; full ESLint passed in 9.8s; whitespace and protected-engine checks passed. A final combined authenticated/static build exited 0 in 184.4s: authenticated compile 30.1s with 18/18 units, then static compile 31.8s with 14/14 units and 2/2 export units.

@@ -165,6 +165,20 @@ describe("Nova chat experience", () => {
     expect(chat).toContain("[cancelPendingWork, contextKey]");
   });
 
+  it("restores persistent composer focus when a context reset removes the focused follow-up", () => {
+    const chat = source("components/nova/nova-chat.tsx");
+    const contextResetStart = chat.indexOf("useLayoutEffect(() => {\n    cancelPendingWork();");
+    const contextResetEnd = chat.indexOf("  }, [cancelPendingWork, contextKey]);", contextResetStart);
+    const contextResetSource = chat.slice(contextResetStart, contextResetEnd);
+
+    expect(contextResetSource).toContain("dialogLostFocus");
+    expect(contextResetSource).toContain("dialogRef.current");
+    expect(contextResetSource).toContain("contextFocusPendingRef.current = dialogLostFocus");
+    expect(chat).toContain("if (!isLoaded || !contextFocusPendingRef.current) return;");
+    expect(chat).toContain("activeDialog.contains(document.activeElement)");
+    expect(chat).toContain("composer.focus({ preventScroll: true })");
+  });
+
   it("stages one response at a time and removes delay and travel for reduced motion", () => {
     const chat = source("components/nova/nova-chat.tsx");
 

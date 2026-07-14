@@ -1,9 +1,14 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, ChevronDown } from "lucide-react";
 import { motionTokens } from "@/lib/motion/variants";
+import {
+  placeSelectPopup,
+  type SelectPopupPlacement
+} from "@/lib/ui/select-placement";
 import {
   collectSelectOptions,
   selectOptionSignature,
@@ -28,6 +33,20 @@ type SelectProps = Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "children
   children?: React.ReactNode;
   onValueChange?: (value: string) => void;
 };
+
+const useBrowserLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
+
+function samePlacement(
+  current: SelectPopupPlacement | null,
+  next: SelectPopupPlacement
+) {
+  return current !== null
+    && current.side === next.side
+    && current.top === next.top
+    && current.left === next.left
+    && current.width === next.width
+    && current.maxHeight === next.maxHeight;
+}
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
   {
@@ -74,6 +93,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
     [options]
   );
   const [open, setOpen] = React.useState(false);
+  const [portalReady, setPortalReady] = React.useState(false);
+  const [placement, setPlacement] = React.useState<SelectPopupPlacement | null>(null);
   const [activeIdentity, setActiveIdentity] = React.useState<string | null>(null);
   const activeOption = visibleOptions.find(
     (option) => option.identity === activeIdentity && !option.disabled
@@ -81,6 +102,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
   const shouldReduceMotion = useReducedMotion();
   const rootRef = React.useRef<HTMLDivElement>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const listboxRef = React.useRef<HTMLDivElement>(null);
   const nativeSelectRef = React.useRef<HTMLSelectElement | null>(null);
   const nativeFocusRef = React.useRef<{
     node: HTMLSelectElement;
@@ -152,6 +174,39 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
     setActiveIdentity(reconcileActiveIdentity(null, selectedValue, options));
   }, [options, selectedValue]);
 
+  React.useEffect(() => setPortalReady(true), []);
+
+  const measurePlacement = React.useCallback((contentHeight?: number) => {
+    const trigger = triggerRef.current;
+    if (!trigger || typeof window === "undefined") return;
+    const anchor = trigger.getBoundingClientRect();
+    const listbox = listboxRef.current;
+    const visualViewport = window.visualViewport;
+    const measuredContentHeight = contentHeight
+      ?? (listbox ? listbox.scrollHeight + Math.max(0, listbox.offsetHeight - listbox.clientHeight) : 288);
+    const nextPlacement = placeSelectPopup({
+      anchor: {
+        top: anchor.top,
+        bottom: anchor.bottom,
+        left: anchor.left,
+        width: anchor.width
+      },
+      viewport: {
+        top: visualViewport?.offsetTop ?? 0,
+        left: visualViewport?.offsetLeft ?? 0,
+        width: visualViewport?.width ?? window.innerWidth,
+        height: visualViewport?.height ?? window.innerHeight
+      },
+      contentHeight: measuredContentHeight
+    });
+    setPlacement((current) => samePlacement(current, nextPlacement) ? current : nextPlacement);
+  }, []);
+
+  const openPopup = React.useCallback(() => {
+    measurePlacement(288);
+    setOpen(true);
+  }, [measurePlacement]);
+
   const closeAndFocus = React.useCallback(() => {
     setOpen(false);
     window.requestAnimationFrame(() => triggerRef.current?.focus());
@@ -205,6 +260,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
     if (key === "Escape") {
       if (open) {
         event.preventDefault();
+        event.stopPropagation();
         closeAndFocus();
       }
       return;
@@ -217,7 +273,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
       event.preventDefault();
       if (!open) {
         setInitialActiveOption();
-        setOpen(true);
+        openPopup();
       } else if (activeOption) {
         chooseOption(activeOption);
       }
@@ -226,7 +282,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
     if (key === "ArrowDown" || key === "ArrowUp" || key === "Home" || key === "End") {
       event.preventDefault();
       if (!open) {
-        setOpen(true);
+        openPopup();
         const initialIdentity = reconcileActiveIdentity(null, selectedValue, options);
         const currentEnabledIndex = enabledOptions.findIndex(
           (option) => option.identity === initialIdentity
@@ -243,7 +299,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
   };
 
   const handleTriggerBlur = (event: React.FocusEvent<HTMLButtonElement>) => {
-    if (rootRef.current?.contains(event.relatedTarget as Node | null)) return;
+    const relatedTarget = event.relatedTarget as Node | null;
+    if (
+      rootRef.current?.contains(relatedTarget)
+      || listboxRef.current?.contains(relatedTarget)
+    ) return;
     setOpen(false);
     nativeSelectRef.current?.dispatchEvent(
       new FocusEvent("focusout", { bubbles: true, relatedTarget: event.relatedTarget })
@@ -253,11 +313,46 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
   React.useEffect(() => {
     if (!open) return;
     const handleOutsidePointer = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (
+        !rootRef.current?.contains(event.target as Node)
+        && !listboxRef.current?.contains(event.target as Node)
+      ) setOpen(false);
     };
-    document.addEventListener("pointerdown", handleOutsidePointer);
-    return () => document.removeEventListener("pointerdown", handleOutsidePointer);
+    document.addEventListener("pointerdown", handleOutsidePointer, true);
+    return () => document.removeEventListener("pointerdown", handleOutsidePointer, true);
   }, [open]);
+
+  useBrowserLayoutEffect(() => {
+    if (!open) return;
+    measurePlacement();
+    let placementFrame: number | null = null;
+    const schedulePlacement = () => {
+      if (placementFrame !== null) return;
+      placementFrame = window.requestAnimationFrame(() => {
+        placementFrame = null;
+        measurePlacement();
+      });
+    };
+
+    window.addEventListener("resize", schedulePlacement);
+    window.addEventListener("scroll", schedulePlacement, true);
+    window.visualViewport?.addEventListener("resize", schedulePlacement);
+    window.visualViewport?.addEventListener("scroll", schedulePlacement);
+    const observer = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(schedulePlacement);
+    if (triggerRef.current) observer?.observe(triggerRef.current);
+    if (listboxRef.current) observer?.observe(listboxRef.current);
+
+    return () => {
+      if (placementFrame !== null) window.cancelAnimationFrame(placementFrame);
+      window.removeEventListener("resize", schedulePlacement);
+      window.removeEventListener("scroll", schedulePlacement, true);
+      window.visualViewport?.removeEventListener("resize", schedulePlacement);
+      window.visualViewport?.removeEventListener("scroll", schedulePlacement);
+      observer?.disconnect();
+    };
+  }, [measurePlacement, open, optionSignature]);
 
   React.useEffect(() => {
     if (isControlled) return;
@@ -321,8 +416,12 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
         autoFocus={autoFocus}
         tabIndex={tabIndex}
         onClick={() => {
-          if (!open) setInitialActiveOption();
-          setOpen((current) => !current);
+          if (open) {
+            setOpen(false);
+            return;
+          }
+          setInitialActiveOption();
+          openPopup();
         }}
         onKeyDown={handleTriggerKeyDown}
         onBlur={handleTriggerBlur}
@@ -340,54 +439,6 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
           className={cn("size-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:[transition-duration:var(--motion-fast)]", open && "rotate-180")}
         />
       </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            id={listboxId}
-            role="listbox"
-            aria-labelledby={ariaLabelledBy ?? triggerId}
-            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.98, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.98, y: -4 }}
-            transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
-            className="absolute left-0 right-0 z-50 mt-2 max-h-72 origin-top overflow-y-auto overscroll-contain rounded-xl border border-border bg-popover/95 p-1.5 text-popover-foreground shadow-xl backdrop-blur-xl"
-          >
-            {visibleOptions.map((option) => {
-              const selected = option.identity === selectedOption?.identity;
-              const active = option.identity === activeOption?.identity;
-              return (
-                <motion.div
-                  ref={(node) => {
-                    if (node) optionRefs.current.set(option.identity, node);
-                    else optionRefs.current.delete(option.identity);
-                  }}
-                  id={`${listboxId}-option-${option.domIdPart}`}
-                  key={option.identity}
-                  role="option"
-                  aria-selected={selected}
-                  aria-disabled={option.disabled || undefined}
-                  data-active={active || undefined}
-                  onPointerMove={() => {
-                    if (!option.disabled) setActiveIdentity(option.identity);
-                  }}
-                  onPointerDown={(event) => event.preventDefault()}
-                  onClick={() => chooseOption(option)}
-                  className={cn(
-                    "flex min-h-10 cursor-default select-none items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm outline-none",
-                    active && "bg-accent text-accent-foreground",
-                    selected && "font-bold text-primary",
-                    option.disabled && "pointer-events-none opacity-45"
-                  )}
-                >
-                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  {selected && <Check className="size-4 shrink-0" aria-hidden="true" />}
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <select
         {...nativeProps}
@@ -420,6 +471,69 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function Select(
           </option>
         ))}
       </select>
+      {!portalReady ? null : createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={listboxRef}
+              id={listboxId}
+              role="listbox"
+              aria-labelledby={ariaLabelledBy ?? triggerId}
+              initial={shouldReduceMotion
+                ? { opacity: 1 }
+                : { opacity: 0, scale: 0.98, y: placement?.side === "above" ? 4 : -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={shouldReduceMotion
+                ? { opacity: 1 }
+                : { opacity: 0, scale: 0.98, y: placement?.side === "above" ? 4 : -4 }}
+              transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+              style={{
+                top: placement?.top ?? 0,
+                left: placement?.left ?? 0,
+                width: placement?.width ?? 0,
+                maxHeight: placement?.maxHeight ?? 0,
+                visibility: placement ? "visible" : "hidden",
+                transformOrigin: placement?.side === "above" ? "bottom" : "top"
+              }}
+              className="fixed z-[70] max-h-72 overflow-y-auto overscroll-contain rounded-xl border border-border bg-popover/95 p-1.5 text-popover-foreground shadow-xl backdrop-blur-xl"
+            >
+              {visibleOptions.map((option) => {
+                const selected = option.identity === selectedOption?.identity;
+                const active = option.identity === activeOption?.identity;
+                return (
+                  <motion.div
+                    ref={(node) => {
+                      if (node) optionRefs.current.set(option.identity, node);
+                      else optionRefs.current.delete(option.identity);
+                    }}
+                    id={`${listboxId}-option-${option.domIdPart}`}
+                    key={option.identity}
+                    role="option"
+                    aria-selected={selected}
+                    aria-disabled={option.disabled || undefined}
+                    data-active={active || undefined}
+                    onPointerMove={() => {
+                      if (!option.disabled) setActiveIdentity(option.identity);
+                    }}
+                    onPointerDown={(event) => event.preventDefault()}
+                    onClick={() => chooseOption(option)}
+                    className={cn(
+                      "flex min-h-10 cursor-default select-none items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm outline-none",
+                      active && "bg-accent text-accent-foreground",
+                      selected && "font-bold text-primary",
+                      option.disabled && "pointer-events-none opacity-45"
+                    )}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                    {selected && <Check className="size-4 shrink-0" aria-hidden="true" />}
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 });

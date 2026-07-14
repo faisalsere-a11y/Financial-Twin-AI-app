@@ -12,9 +12,9 @@ import { LoaderCircle, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectItem } from "@/components/ui/select";
 import type { GoalModel } from "@/lib/financial/types";
 import { goalUpdateSchema, type GoalUpdateValues } from "@/lib/profile/goal-updates";
-import { cn } from "@/lib/utils";
 
 type GoalEditorProps = {
   goal: GoalModel;
@@ -64,8 +64,6 @@ const focusableSelector = [
   "a[href]",
   "[tabindex]:not([tabindex='-1'])"
 ].join(",");
-
-const selectClassName = "flex h-11 w-full rounded-xl border border-input bg-card/80 px-3 py-2 text-sm text-foreground shadow-sm outline-none focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 function initialFormState(goal: GoalModel): GoalFormState {
   return {
@@ -125,6 +123,9 @@ export function GoalEditor({ goal, onClose, onSave, returnFocusId }: GoalEditorP
         ? document.activeElement
         : null;
     const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+    const bodyPaddingRight = Number.parseFloat(window.getComputedStyle(document.body).paddingRight) || 0;
     const backgroundStates = Array.from(document.body.children)
       .filter((element): element is HTMLElement => (
         element instanceof HTMLElement && !element.contains(dialogElement)
@@ -142,6 +143,7 @@ export function GoalEditor({ goal, onClose, onSave, returnFocusId }: GoalEditorP
     };
 
     document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) document.body.style.paddingRight = `${bodyPaddingRight + scrollbarWidth}px`;
     for (const { backgroundElement } of backgroundStates) {
       backgroundElement.inert = true;
       backgroundElement.setAttribute("aria-hidden", "true");
@@ -153,6 +155,7 @@ export function GoalEditor({ goal, onClose, onSave, returnFocusId }: GoalEditorP
       window.cancelAnimationFrame(focusFrame);
       window.removeEventListener("keydown", blockCompetingPaletteShortcut, { capture: true });
       document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
       for (const { backgroundElement, inert, ariaHidden } of backgroundStates) {
         backgroundElement.inert = inert;
         if (ariaHidden === null) backgroundElement.removeAttribute("aria-hidden");
@@ -294,32 +297,32 @@ export function GoalEditor({ goal, onClose, onSave, returnFocusId }: GoalEditorP
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="goal-category">Category</Label>
-                <select
+                <Select
                   id="goal-category"
                   value={form.category}
                   disabled={isSaving}
                   aria-invalid={Boolean(fieldErrors.category)}
                   aria-describedby={fieldErrors.category ? "goal-category-error" : undefined}
-                  onChange={(event) => updateField("category", event.target.value as GoalModel["category"])}
-                  className={cn(selectClassName, "mt-2")}
+                  onValueChange={(value) => updateField("category", value as GoalModel["category"])}
+                  className="mt-2"
                 >
-                  {goalCategories.map((category) => <option key={category} value={category}>{category}</option>)}
-                </select>
+                  {goalCategories.map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}
+                </Select>
                 <FieldError field="category" errors={fieldErrors} />
               </div>
               <div>
                 <Label htmlFor="goal-priority">Priority</Label>
-                <select
+                <Select
                   id="goal-priority"
                   value={form.priority}
                   disabled={isSaving}
                   aria-invalid={Boolean(fieldErrors.priority)}
                   aria-describedby={fieldErrors.priority ? "goal-priority-error" : undefined}
-                  onChange={(event) => updateField("priority", event.target.value as GoalModel["priority"])}
-                  className={cn(selectClassName, "mt-2")}
+                  onValueChange={(value) => updateField("priority", value as GoalModel["priority"])}
+                  className="mt-2"
                 >
-                  {goalPriorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
-                </select>
+                  {goalPriorities.map((priority) => <SelectItem key={priority} value={priority}>{priority}</SelectItem>)}
+                </Select>
                 <FieldError field="priority" errors={fieldErrors} />
               </div>
             </div>

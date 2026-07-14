@@ -2,26 +2,32 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
   LoaderCircle,
   PencilLine,
   ShieldAlert,
+  Sparkles,
   Target
 } from "lucide-react";
 import { GoalCelebration } from "@/components/goals/goal-celebration";
 import { GoalEditor } from "@/components/goals/goal-editor";
 import { GoalProgressRing } from "@/components/goals/goal-progress-ring";
 import { AppPageHeader } from "@/components/layout/app-shell";
+import { AnimatedNumber } from "@/components/motion/animated-number";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { forecastGoalCompletion } from "@/lib/financial/engine";
 import type { FinancialProfile, GoalModel } from "@/lib/financial/types";
+import { motionTokens } from "@/lib/motion/variants";
+import { createGoalPortfolioInsight } from "@/lib/presentation/goal-insight";
 import {
   crossedGoalCompletion,
   moveGoal,
@@ -103,11 +109,23 @@ function GoalsExperience({
 }: GoalsExperienceProps) {
   const [selectedGoal, setSelectedGoal] = useState<GoalModel | null>(null);
   const [movingGoalId, setMovingGoalId] = useState<string | null>(null);
+  const [expandedGoalIds, setExpandedGoalIds] = useState(() => new Set<string>());
+  const shouldReduceMotion = useReducedMotion() === true;
   const movingRef = useRef(false);
   const goals = forecastGoalCompletion(profile);
   const totalTarget = profile.goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
   const totalFunded = profile.goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
   const plannedMonthly = profile.goals.reduce((sum, goal) => sum + goal.monthlyContribution, 0);
+  const insight = createGoalPortfolioInsight(goals, profile.currency);
+
+  const toggleGoalDetails = (goalId: string) => {
+    setExpandedGoalIds((current) => {
+      const next = new Set(current);
+      if (next.has(goalId)) next.delete(goalId);
+      else next.add(goalId);
+      return next;
+    });
+  };
 
   const handleGoalSave = (goalId: string, values: GoalUpdateValues) => {
     const beforeGoal = profile.goals.find((goal) => goal.id === goalId);
@@ -197,14 +215,24 @@ function GoalsExperience({
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Funded so far</p>
-              <p className="mt-2 text-2xl font-black">{formatCurrency(totalFunded, profile.currency)}</p>
+              <AnimatedNumber
+                value={totalFunded}
+                format={(value) => formatCurrency(value, profile.currency)}
+                wrap
+                className="mt-2 text-2xl font-black"
+              />
               <p className="mt-1 text-sm text-muted-foreground">of {formatCurrency(totalTarget, profile.currency)} targeted</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Planned each month</p>
-              <p className="mt-2 text-2xl font-black">{formatCurrency(plannedMonthly, profile.currency)}</p>
+              <AnimatedNumber
+                value={plannedMonthly}
+                format={(value) => formatCurrency(value, profile.currency)}
+                wrap
+                className="mt-2 text-2xl font-black"
+              />
               <p className="mt-1 text-sm text-muted-foreground">across {profile.goals.length} active {profile.goals.length === 1 ? "goal" : "goals"}</p>
             </CardContent>
           </Card>
@@ -216,6 +244,37 @@ function GoalsExperience({
             </CardContent>
           </Card>
         </section>
+
+        {insight && (
+          <Card
+            aria-labelledby="goal-nova-insight-title"
+            className="mb-6 border-primary/25 bg-[linear-gradient(135deg,hsl(var(--primary)/0.10),hsl(var(--card))_48%,hsl(var(--chart-3)/0.08))]"
+          >
+            <CardHeader className="border-b border-primary/15">
+              <div className="flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/[0.12] text-primary shadow-glow">
+                  <Sparkles className="size-5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">Nova goal signal</p>
+                  <h2 id="goal-nova-insight-title" className="mt-1 text-lg font-black tracking-tight">{insight.title}</h2>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-4 p-5 sm:p-6">
+              <p className="max-w-4xl text-sm leading-6 text-foreground/90">{insight.message}</p>
+              <dl className="grid gap-3 sm:grid-cols-3">
+                {insight.evidence.map((item) => (
+                  <div key={item.label} className="rounded-xl border border-border bg-background/55 p-3">
+                    <dt className="text-[11px] font-black uppercase tracking-[0.11em] text-muted-foreground">{item.label}</dt>
+                    <dd className="mt-1 text-sm font-black tabular-nums">{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="text-xs leading-5 text-muted-foreground">Grounded in this financial model only. Update a goal to refresh the forecast evidence.</p>
+            </CardContent>
+          </Card>
+        )}
 
         {profile.goals.length === 0 ? (
           <Card className="border-dashed">
@@ -249,6 +308,9 @@ function GoalsExperience({
                 const progress = clamp(goal.progress, 0, 100);
                 const signal = goalSignal(progress, goal.forecastDate, goal.targetDate);
                 const nextMilestone = milestones.find((milestone) => progress < milestone);
+                const detailsId = `goal-details-${goal.id}`;
+                const detailsExpanded = expandedGoalIds.has(goal.id);
+                const goalInsight = createGoalPortfolioInsight([goal], profile.currency);
 
                 return (
                   <Card key={goal.id} className="overflow-hidden">
@@ -262,7 +324,7 @@ function GoalsExperience({
                         </Badge>
                       </div>
                       <CardTitle className="normal-case tracking-normal">{goal.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{goal.category} · target {formatDate(goal.targetDate)}</p>
+                      <p className="text-sm text-muted-foreground">{goal.category} · {Math.round(progress)}% funded</p>
                     </CardHeader>
 
                     <CardContent className="grid gap-5 pt-6">
@@ -277,48 +339,95 @@ function GoalsExperience({
                         </div>
                       </div>
 
-                      <ol aria-label={`${goal.name} funding milestones`} className="grid grid-cols-4 gap-2">
-                        {milestones.map((milestone) => {
-                          const reached = progress >= milestone;
-                          return (
-                            <li
-                              key={milestone}
-                              aria-label={`${milestone}% ${reached ? "reached" : "not reached"}`}
-                              aria-current={nextMilestone === milestone ? "step" : undefined}
-                              className="text-center"
-                            >
-                              <span aria-hidden="true" className={cn("mx-auto block h-1.5 rounded-full", reached ? "bg-primary shadow-glow" : "bg-muted")} />
-                              <span className="mt-1.5 block text-[10px] font-bold text-muted-foreground">{milestone}%</span>
-                            </li>
-                          );
-                        })}
-                      </ol>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        aria-expanded={detailsExpanded}
+                        aria-controls={detailsId}
+                        onClick={() => toggleGoalDetails(goal.id)}
+                        className="w-full justify-between border border-border bg-muted/25"
+                      >
+                        {detailsExpanded ? "Hide forecast details" : "Show forecast details"}
+                        <ChevronDown
+                          aria-hidden="true"
+                          className={cn(
+                            "size-4 motion-safe:transition-transform motion-safe:[transition-duration:var(--motion-fast)]",
+                            detailsExpanded && "rotate-180"
+                          )}
+                        />
+                      </Button>
 
-                      <dl className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-xl border border-border bg-muted/30 p-3">
-                          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Next monthly contribution</dt>
-                          <dd className="mt-1 font-black">{formatCurrency(goal.monthlyContribution, profile.currency)}</dd>
-                        </div>
-                        <div className="rounded-xl border border-border bg-muted/30 p-3">
-                          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Engine forecast</dt>
-                          <dd className="mt-1 font-black">{formatDate(goal.forecastDate)}</dd>
-                          <dd className="mt-1 text-xs text-muted-foreground">{goal.monthsRemaining} months remaining</dd>
-                        </div>
-                        <div className="rounded-xl border border-border bg-muted/30 p-3">
-                          <dt className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                            <CalendarClock className="size-3.5" aria-hidden="true" />
-                            Forecast status
-                          </dt>
-                          <dd className="mt-2"><Badge variant={signal.variant}>{signal.status}</Badge></dd>
-                        </div>
-                        <div className="rounded-xl border border-border bg-muted/30 p-3">
-                          <dt className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                            <ShieldAlert className="size-3.5" aria-hidden="true" />
-                            Risk signal
-                          </dt>
-                          <dd className="mt-1 text-sm font-semibold leading-5">{signal.risk}</dd>
-                        </div>
-                      </dl>
+                      <AnimatePresence initial={false}>
+                        {detailsExpanded && (
+                          <motion.div
+                            id={detailsId}
+                            role="region"
+                            aria-label={`${goal.name} forecast details`}
+                            initial={shouldReduceMotion ? false : { opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
+                            transition={{ duration: shouldReduceMotion ? 0 : motionTokens.standard, ease: motionTokens.ease }}
+                            className="grid gap-5"
+                          >
+                            <ol aria-label={`${goal.name} funding milestones`} className="grid grid-cols-4 gap-2">
+                              {milestones.map((milestone) => {
+                                const reached = progress >= milestone;
+                                return (
+                                  <li
+                                    key={milestone}
+                                    aria-label={`${milestone}% ${reached ? "reached" : "not reached"}`}
+                                    aria-current={nextMilestone === milestone ? "step" : undefined}
+                                    className="text-center"
+                                  >
+                                    <span aria-hidden="true" className={cn("mx-auto block h-1.5 rounded-full", reached ? "bg-primary shadow-glow" : "bg-muted")} />
+                                    <span className="mt-1.5 block text-[10px] font-bold text-muted-foreground">{milestone}%</span>
+                                  </li>
+                                );
+                              })}
+                            </ol>
+
+                            <dl className="grid gap-3 sm:grid-cols-2">
+                              <div className="rounded-xl border border-border bg-muted/30 p-3">
+                                <dt className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Target date</dt>
+                                <dd className="mt-1 font-black">{formatDate(goal.targetDate)}</dd>
+                              </div>
+                              <div className="rounded-xl border border-border bg-muted/30 p-3">
+                                <dt className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Next monthly contribution</dt>
+                                <dd className="mt-1 font-black">{formatCurrency(goal.monthlyContribution, profile.currency)}</dd>
+                              </div>
+                              <div className="rounded-xl border border-border bg-muted/30 p-3">
+                                <dt className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Engine forecast</dt>
+                                <dd className="mt-1 font-black">{formatDate(goal.forecastDate)}</dd>
+                                <dd className="mt-1 text-xs text-muted-foreground">{goal.monthsRemaining} months remaining</dd>
+                              </div>
+                              <div className="rounded-xl border border-border bg-muted/30 p-3">
+                                <dt className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                                  <CalendarClock className="size-3.5" aria-hidden="true" />
+                                  Forecast status
+                                </dt>
+                                <dd className="mt-2"><Badge variant={signal.variant}>{signal.status}</Badge></dd>
+                              </div>
+                              <div className="rounded-xl border border-border bg-muted/30 p-3 sm:col-span-2">
+                                <dt className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                                  <ShieldAlert className="size-3.5" aria-hidden="true" />
+                                  Risk signal
+                                </dt>
+                                <dd className="mt-1 text-sm font-semibold leading-5">{signal.risk}</dd>
+                              </div>
+                            </dl>
+
+                            {goalInsight && (
+                              <div className="rounded-xl border border-primary/20 bg-primary/[0.08] p-4" aria-label={`${goal.name} Nova forecast note`}>
+                                <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-primary">
+                                  <Sparkles className="size-3.5" aria-hidden="true" />
+                                  Nova forecast note
+                                </p>
+                                <p className="mt-2 text-sm leading-6 text-foreground/90">{goalInsight.message}</p>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
                       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
                         <Button

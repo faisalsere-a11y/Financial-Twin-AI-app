@@ -34,6 +34,7 @@ import { FloatingActions } from "@/components/layout/floating-actions";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { motionTokens } from "@/lib/motion/variants";
 import { openCommandPalette } from "@/lib/ui/commands";
+import { shouldDismissMobileDrawer } from "@/lib/ui/mobile-drawer";
 import {
   getSidebarPreferenceStorage,
   navItems,
@@ -109,7 +110,7 @@ function Brand({
         transition={motionDisabled ? { duration: 0 } : { duration: 4.8, ease: "easeInOut", repeat: Infinity }}
       >
         <span aria-hidden="true" className="absolute inset-0 rounded-full bg-primary/20 blur-md" />
-        <NovaOrb className="relative size-10 motion-safe:transition-transform motion-safe:[transition-duration:var(--motion-fast)] group-hover:scale-[1.04]" />
+        <NovaOrb className="relative size-10 motion-safe:transition-transform motion-safe:[transition-duration:var(--motion-fast)] motion-safe:group-hover:scale-[1.04]" />
       </motion.span>
       <SidebarPresence motionEnabled={motionEnabled}>
         {!compact && (
@@ -235,7 +236,7 @@ function Sidebar({
               )}
               <span
                 className={cn(
-                  "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-xl border motion-safe:transition-[color,transform,box-shadow] motion-safe:[transition-duration:var(--motion-fast)] group-hover:scale-[1.04] group-hover:shadow-glow",
+                  "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-xl border motion-safe:transition-[color,transform,box-shadow] motion-safe:[transition-duration:var(--motion-fast)] motion-safe:group-hover:scale-[1.04] motion-safe:group-hover:shadow-glow",
                   active
                     ? "border-primary/25 bg-primary/10 text-primary shadow-glow"
                     : "border-border bg-muted/50 text-muted-foreground group-hover:text-primary"
@@ -390,6 +391,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobilePresent, setMobilePresent] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const firstMobileLinkRef = useRef<HTMLAnchorElement>(null);
+  const suppressMobileFocusRestoreRef = useRef(false);
   const sidebarPreferenceReadableRef = useRef(false);
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
   const shellTransition = {
@@ -403,7 +405,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const completeMobileClose = useCallback(() => {
     setMobilePresent(false);
-    requestAnimationFrame(() => menuButtonRef.current?.focus());
+    if (suppressMobileFocusRestoreRef.current) {
+      suppressMobileFocusRestoreRef.current = false;
+      return;
+    }
+    requestAnimationFrame(() => {
+      if (window.matchMedia("(min-width: 1024px)").matches) return;
+      menuButtonRef.current?.focus();
+    });
   }, []);
 
   const openMobile = useCallback(() => {
@@ -427,6 +436,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const storage = getSidebarPreferenceStorage(window);
     if (storage) persistSidebarCollapsedPreference(storage, sidebarCollapsed);
   }, [sidebarCollapsed, sidebarMotionReady]);
+
+  useBrowserLayoutEffect(() => {
+    const desktopViewport = window.matchMedia("(min-width: 1024px)");
+    const dismissAtDesktop = () => {
+      if (!shouldDismissMobileDrawer(mobilePresent, desktopViewport.matches)) return;
+      suppressMobileFocusRestoreRef.current = true;
+      setMobileOpen(false);
+      setMobilePresent(false);
+    };
+
+    dismissAtDesktop();
+    desktopViewport.addEventListener("change", dismissAtDesktop);
+    window.addEventListener("resize", dismissAtDesktop);
+    return () => {
+      desktopViewport.removeEventListener("change", dismissAtDesktop);
+      window.removeEventListener("resize", dismissAtDesktop);
+    };
+  }, [mobilePresent]);
 
   useEffect(() => {
     if (!mobilePresent) return;

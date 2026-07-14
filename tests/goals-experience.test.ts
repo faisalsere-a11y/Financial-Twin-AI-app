@@ -35,6 +35,35 @@ describe("goal portfolio experience", () => {
     expect(source).toContain("Risk signal");
   });
 
+  it("animates prominent summary values without duplicating semantic output", () => {
+    expect(source).toContain('import { AnimatedNumber } from "@/components/motion/animated-number"');
+    expect(source).toContain("value={totalFunded}");
+    expect(source).toContain("value={plannedMonthly}");
+    expect(source).toContain("format={(value) => formatCurrency(value, profile.currency)}");
+  });
+
+  it("keeps dense goal evidence in keyboard-accessible reduced-motion-safe disclosures", () => {
+    expect(source).toContain("expandedGoalIds");
+    expect(source).toContain("new Set<string>()");
+    expect(source).toContain("aria-expanded={detailsExpanded}");
+    expect(source).toContain("aria-controls={detailsId}");
+    expect(source).toContain("id={detailsId}");
+    expect(source).toContain("AnimatePresence");
+    expect(source).toContain("useReducedMotion");
+    expect(source).toContain("shouldReduceMotion ? false");
+    expect(source).toContain("detailsExpanded &&");
+  });
+
+  it("shows a deterministic Nova insight grounded in the current keyed profile forecast", () => {
+    expect(source).toContain("createGoalPortfolioInsight(goals, profile.currency)");
+    expect(source).toContain('id="goal-nova-insight-title"');
+    expect(source).toContain("insight.message");
+    expect(source).toContain("insight.evidence.map");
+    expect(source).toContain("Grounded in this financial model only");
+    expect(source.indexOf("const [expandedGoalIds")).toBeGreaterThan(source.indexOf("function GoalsExperience"));
+    expect(source).toContain("key={profileKey}");
+  });
+
   it("gives goal progress and status accessible names", () => {
     expect(source).toContain("<GoalProgressRing");
     expect(progressRing).toContain('role="progressbar"');
@@ -93,6 +122,19 @@ describe("goal portfolio experience", () => {
     expect(editor).toContain('window.addEventListener("keydown", blockCompetingPaletteShortcut, { capture: true })');
     expect(editor).toContain("event.target === event.currentTarget");
     expect(source).toContain("inert={Boolean(selectedGoal)}");
+  });
+
+  it("prevents editor scroll-lock layout shift and uses the shared premium selects", () => {
+    expect(editor).toContain("previousPaddingRight");
+    expect(editor).toContain("scrollbarWidth");
+    expect(editor).toContain("bodyPaddingRight");
+    expect(editor).toContain("document.body.style.paddingRight = previousPaddingRight");
+    expect(editor).toContain('import { Select, SelectItem } from "@/components/ui/select"');
+    expect(editor).toContain('<Select\n                  id="goal-category"');
+    expect(editor).toContain('<Select\n                  id="goal-priority"');
+    expect(editor).toContain("<SelectItem key={category} value={category}>{category}</SelectItem>");
+    expect(editor).toContain("<SelectItem key={priority} value={priority}>{priority}</SelectItem>");
+    expect(editor).not.toContain("<select");
   });
 
   it("restores background isolation before saved-state announcements are published", () => {
